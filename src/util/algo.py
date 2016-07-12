@@ -1,6 +1,6 @@
 __author__ = 'Gian Paolo Jesi'
 
-from graph_tool import Graph, GraphView
+from graph_tool import Graph
 from graph_tool.topology import min_spanning_tree
 from graph_tool.draw import *
 
@@ -11,12 +11,12 @@ def spanningTree(g, multigoal=[], verbose=True):
 
     :param g: Graph based object
     :param multigoal: list of goal vertexes (where the spanning starts)
-    :return: a spanning tree object
+    :return: an boolean edge property map, marking the edges of the spanning tree
     """
     assert len(multigoal) != 0
 
     gv = g.copy()
-    stree = Graph()
+    stree = gv.new_edge_property('bool')
     actual = multigoal
 
     while len(actual) != 0:
@@ -28,7 +28,7 @@ def spanningTree(g, multigoal=[], verbose=True):
         predecessors = [item for item in gv.edges() if item.target() in actual]
         # attaches the predecessor to the spanning tree:
         for e in predecessors:
-            stree.add_edge(e.source(), e.target())
+            stree[e] = 1
 
         actual = frozenset([e.source() for e in predecessors])
 
@@ -42,12 +42,12 @@ def spanning(g, multigoal=[], verbose=False):
 
     :param g: Graph based object
     :param multigoal: list of goal vertexes (where the spanning starts)
-    :return: a spanning graph object, possibly disconnected
+    :return: an boolean edge property map, marking the edges of the spanning
     """
     assert len(multigoal) != 0
 
     gv = g.copy()
-    spanningG = Graph()
+    spanningG = gv.new_edge_property('bool')
     actual = multigoal
 
     temp = [item for item in gv.edges() if item.source() in multigoal]
@@ -63,7 +63,7 @@ def spanning(g, multigoal=[], verbose=False):
 
         # attaches the predecessor to the spanning:
         for e in predecessors:
-            spanningG.add_edge(e.source(), e.target())
+            spanningG[e] = 1
 
         layer = frozenset([e.source() for e in predecessors])
         if verbose:
@@ -106,15 +106,15 @@ if __name__ == '__main__':
     gr.add_edge(g, e)
 
     # g2 = spanning(gr, [gr.vertex(0), gr.vertex(4)])
-    # g2 = spanning(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
-    g2 = spanningTree(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
+    emap = spanning(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
+    # emap = spanningTree(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
 
-    tmap = min_spanning_tree(gr, root=gr.vertex(0))
-    u = GraphView(gr, efilt=tmap)
+    # tmap = min_spanning_tree(gr, root=gr.vertex(0))
+    # u = GraphView(gr, efilt=tmap)
+    u = GraphView(gr, efilt=emap)
 
     print gr
-    print g2
 
-    pos = sfdp_layout(g2, gamma=1.5)
-    graph_draw(g2, pos, output_size=(1000, 1000), vertex_text=gr.vertex_index, edge_text_size=8)
+    pos = sfdp_layout(u, gamma=1.5)
+    graph_draw(gr, pos, output_size=(1000, 1000), vertex_text=gr.vertex_index, edge_text_size=8)
     graph_draw(u, pos, output_size=(1000, 1000), vertex_text=u.vertex_index, edge_text_size=8)
