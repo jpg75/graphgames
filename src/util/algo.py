@@ -30,7 +30,7 @@ def spanningTree(g, multigoal=[], verbose=True):
         for e in predecessors:
             stree.add_edge(e.source(), e.target())
 
-        actual = [e.source() for e in predecessors]
+        actual = frozenset([e.source() for e in predecessors])
 
     return stree
 
@@ -65,9 +65,10 @@ def spanning(g, multigoal=[], verbose=False):
         for e in predecessors:
             spanningG.add_edge(e.source(), e.target())
 
-        layer = [e.source() for e in predecessors]
+        layer = frozenset([e.source() for e in predecessors])
         if verbose:
             print "layer: ", layer
+
         temp = [item for item in gv.edges() if item.source() in layer and not item.target() in
                                                                               actual]
 
