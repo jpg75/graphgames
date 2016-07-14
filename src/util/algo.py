@@ -1,7 +1,7 @@
 __author__ = 'Gian Paolo Jesi'
 
-from graph_tool import Graph
-from graph_tool.topology import min_spanning_tree
+from graph_tool import Graph, GraphView
+from graph_tool.topology import min_spanning_tree, all_paths
 from graph_tool.draw import *
 
 
@@ -26,6 +26,18 @@ def spanningTree(g, multigoal=[], verbose=True):
             gv.remove_edge(e)
 
         predecessors = [item for item in gv.edges() if item.target() in actual]
+        # EXPERIMENTAL! Keeps just one edge having the same source
+        seen = set()
+        keep = []
+        for item in predecessors:
+            if item.source() in seen:
+                pass  # discard
+            else:
+                seen.add(item.source())
+                keep.append(item)
+
+        predecessors = keep
+
         # attaches the predecessor to the spanning tree:
         for e in predecessors:
             stree[e] = 1
@@ -50,13 +62,13 @@ def spanning(g, multigoal=[], verbose=False):
     spanningG = gv.new_edge_property('bool')
     actual = multigoal
 
-    temp = [item for item in gv.edges() if item.source() in multigoal]
-    for e in temp:
-        if verbose:
-            print("removing: ", e)
-        gv.remove_edge(e)
-
     while len(actual) != 0:
+        temp = [item for item in gv.edges() if item.source() in actual]
+        for e in temp:
+            if verbose:
+                print("removing: ", e)
+            gv.remove_edge(e)
+
         predecessors = [item for item in gv.edges() if item.target() in actual]
         if verbose:
             print "pred: ", predecessors
@@ -65,19 +77,9 @@ def spanning(g, multigoal=[], verbose=False):
         for e in predecessors:
             spanningG[e] = 1
 
-        layer = frozenset([e.source() for e in predecessors])
+        actual = frozenset([e.source() for e in predecessors])
         if verbose:
-            print "layer: ", layer
-
-        temp = [item for item in gv.edges() if item.source() in layer and not item.target() in
-                                                                              actual]
-
-        for e in temp:
-            if verbose:
-                print("removing: ", e)
-            gv.remove_edge(e)
-
-        actual = layer
+            print "actual: ", actual
 
     return spanningG
 
@@ -105,9 +107,12 @@ if __name__ == '__main__':
     gr.add_edge(f, c)
     gr.add_edge(g, e)
 
+    for path in all_paths(gr, 0, 4):
+        print "Lenght: %d : %s" % (len(path), path)
+
     # g2 = spanning(gr, [gr.vertex(0), gr.vertex(4)])
     emap = spanning(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
-    # emap = spanningTree(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
+    # emap = spanningTree(gr, [gr.vertex(0)], verbose=True)
 
     # tmap = min_spanning_tree(gr, root=gr.vertex(0))
     # u = GraphView(gr, efilt=tmap)
