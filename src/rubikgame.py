@@ -85,6 +85,21 @@ class RubikLoader(object):
         except IOError as ioe:
             print ioe
 
+    def split_check(self, goals=[]):
+        """
+        Check if the graph can be split according to the given vertexes in the goal list.
+        EXPERIMENTAL!
+
+        :param goals: list of vertexs
+        :return:
+        """
+        assert len(goals) >= 2
+
+        # paths =
+        # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
+        for path in all_paths(self.g, goals[0], goals[1], cutoff=6):
+            print "Lenght: %d : %s" % (len(path), path)
+
     def draw(self):
         assert self.g.num_vertices(ignore_filter=True) > 0
 
@@ -151,11 +166,15 @@ class RubikLoader(object):
         else:
             multigoal = [self.index[x] for x in multigoal]
 
+        # sg = spanning(self.g, multigoal, verbose=True)
+        span_map = spanning(self.g, multigoal, verbose=True)
+
         move = self.g.edge_properties['move']
         name = self.g.vertex_properties['name']
-        sg = spanning(self.g, multigoal)
-        pos = sfdp_layout(sg, gamma=1.5)
-        graph_draw(sg, pos, output_size=(1000, 1000),
+        self.g.set_edge_filter(span_map)
+        pos = sfdp_layout(self.g, gamma=1.5)
+
+        graph_draw(self.g, pos, output_size=(1000, 1000),
                    edge_text=move, vertex_text=name, edge_text_size=8)
 
 
@@ -211,6 +230,7 @@ if __name__ == '__main__':
     # ldr.g.load('data/MRubikg.xml.gz')
     ldr.loadMatrix('data/MiniRubik.txt')
     print ldr.g
+    ldr.split_check(ldr.index['ABCD'], ldr.index['ABDC'])
     ldr.draw()
     ldr.draw_spanning(multigoal=['ABCD', 'ABDC'])
     # ldr.draw_intersect(v1='ABCD', v2='ABDC')
