@@ -4,7 +4,7 @@ from graph_tool.all import *
 from numpy.random import random
 import matplotlib as pl
 import ast
-from util.algo import spanning
+from util.algo import spanning, split_check
 
 
 class RubikLoader(object):
@@ -85,21 +85,6 @@ class RubikLoader(object):
         except IOError as ioe:
             print ioe
 
-    def split_check(self, goals=[]):
-        """
-        Check if the graph can be split according to the given vertexes in the goal list.
-        EXPERIMENTAL!
-
-        :param goals: list of vertexs
-        :return:
-        """
-        assert len(goals) >= 2
-
-        # paths =
-        # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
-        for path in all_paths(self.g, goals[0], goals[1], cutoff=6):
-            print "Lenght: %d : %s" % (len(path), path)
-
     def draw(self):
         assert self.g.num_vertices(ignore_filter=True) > 0
 
@@ -166,7 +151,6 @@ class RubikLoader(object):
         else:
             multigoal = [self.index[x] for x in multigoal]
 
-        # sg = spanning(self.g, multigoal, verbose=True)
         span_map = spanning(self.g, multigoal, verbose=True)
 
         move = self.g.edge_properties['move']
@@ -230,7 +214,8 @@ if __name__ == '__main__':
     # ldr.g.load('data/MRubikg.xml.gz')
     ldr.loadMatrix('data/MiniRubik.txt')
     print ldr.g
-    ldr.split_check(ldr.index['ABCD'], ldr.index['ABDC'])
+    split_check(ldr.g, [ldr.index['ABCD'], ldr.index['ABDC']])
     ldr.draw()
-    ldr.draw_spanning(multigoal=['ABCD', 'ABDC'])
+
+    ldr.draw_spanning(multigoal=['ABCD', 'ADBC'])
     # ldr.draw_intersect(v1='ABCD', v2='ABDC')

@@ -1,7 +1,7 @@
 __author__ = 'Gian Paolo Jesi'
 
 from graph_tool import Graph, GraphView
-from graph_tool.topology import min_spanning_tree, all_paths
+from graph_tool.topology import min_spanning_tree, all_paths, shortest_distance
 from graph_tool.draw import *
 
 
@@ -83,6 +83,37 @@ def spanning(g, multigoal=[], verbose=False):
 
     return spanningG
 
+
+def split_check(g, goals=[]):
+        """
+        Check if the graph can be split according to the given vertexes in the goal list.
+        EXPERIMENTAL!
+        Based on shortest distance matrix. Works with just 2 goals for now.
+
+        :param g: graph
+        :param goals: list of vertexes
+        :return:
+        """
+        assert len(goals) >= 2
+
+        # paths =
+        # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
+        #for path in all_paths(g, goals[0], goals[1], cutoff=6):
+        #    print "Lenght: %d : %s" % (len(path), path)
+
+        dist = shortest_distance(g)  # all distances
+
+        print dist
+        for goal in goals:
+            print dist[goal].a
+
+        # av1 = dist[ldr.index['ABCD']].a
+        # av2 = dist[ldr.index['ADBC']].a
+        # print ldr.index['ABDC']
+        # print(av1)
+        # print(av2)
+        result = [x[0] - x[1] for x in zip(dist[goals[0]].a, dist[goals[1]].a)]
+        print result
 
 if __name__ == '__main__':
     gr = Graph()
