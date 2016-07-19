@@ -1,30 +1,24 @@
 __author__ = 'Gian Paolo Jesi'
 
 from graph_tool.all import *
-from numpy.random import random
-import matplotlib as pl
 import ast
+from loader import BasicLoader
 from util.algo import spanning, split_check
 
 
-class RubikLoader(object):
+class RubikLoader(BasicLoader):
     def __init__(self, properties=('name',)):
-        self.index = dict()  # maps lists (node states) to name index
+        super(RubikLoader, self).__init__()
         self.properties = properties
-        self.g = Graph()
         # making internal properties for vertex:
         for item in properties:
             self.g.vertex_properties[item] = self.g.new_vertex_property("string")
-        # internal property for edges:
-        self.g.edge_properties['move'] = self.g.new_edge_property("string")
 
     def make_gt_line(self, line):
         line = line.replace('{', '[')
         line = line.replace('}', ']')
 
         a_data, b_data, m = ast.literal_eval(line)
-        params_a = dict()
-        params_b = dict()
 
         # when a and b are simple strings, convert them to a sequence of a
         # single element
@@ -65,25 +59,8 @@ class RubikLoader(object):
         ab = self.g.add_edge(self.index[a_data], self.index[b_data])
         self.g.edge_properties['move'][ab] = m
 
-    def loadMatrix(self, filename="data/MiniRubik.txt", limit=-1):
-        counter = 1
-        # reset the index to avoid conflicts
-        self.index.clear()
-        self.index['counter'] = 0
-        self.g.clear()
-
-        try:
-            with open(filename, 'r') as f:
-                for line in f:
-                    if limit != -1 and counter >= limit: break
-
-                    print "processing line %d: %s" % (counter, line)
-                    counter += 1
-
-                    self.make_gt_line(line)
-
-        except IOError as ioe:
-            print ioe
+    def load_matrix(self, filename="data/MiniRubik.txt", limit=-1):
+        super(RubikLoader, self).load_matrix(filename, limit)
 
     def draw(self):
         assert self.g.num_vertices(ignore_filter=True) > 0
@@ -92,7 +69,6 @@ class RubikLoader(object):
         pos = sfdp_layout(gv, gamma=1.5)
         move = gv.edge_properties['move']
         name = gv.vertex_properties['name']
-        # print name
         # vcmap = pl.cm.gist_heat
         graph_draw(gv, pos, output_size=(1000, 1000),
                    edge_text=move, vertex_text=name, edge_text_size=8)
@@ -104,7 +80,6 @@ class RubikLoader(object):
 
         gv = GraphView(self.g)
         pos = sfdp_layout(gv, gamma=1.5)
-        # pos = radial_tree_layout(gv, root=v1)
         move = gv.edge_properties['move']
         name = gv.vertex_properties['name']
 
@@ -129,7 +104,6 @@ class RubikLoader(object):
                    edge_text=move, vertex_text=name)
 
         map_values = intersect_maps(spt1_map, spt2_map)
-        filter_map_values = [bool(x) for x in map_values]
         intersection_map = gv.new_ep("int", vals=map_values)
         filter_map = gv.new_ep("bool", vals=map_values)
 
@@ -176,7 +150,6 @@ def get_vertices_from_eprop(eprop):
 
     index = 0
     for e in g.edges():
-        # print data[index]
         if data[index] == 1:
             a = g.vertex_index[e.source()]
             b = g.vertex_index[e.target()]
@@ -212,10 +185,10 @@ def intersect_maps(map_a, map_b):
 if __name__ == '__main__':
     ldr = RubikLoader()
     # ldr.g.load('data/MRubikg.xml.gz')
-    ldr.loadMatrix('data/MiniRubik.txt')
+    ldr.load_matrix('data/MiniRubik.txt')
     print ldr.g
     split_check(ldr.g, [ldr.index['ABCD'], ldr.index['ABDC']])
     ldr.draw()
 
-    ldr.draw_spanning(multigoal=['ABCD', 'ADBC'])
+    ldr.draw_spanning(multigoal=['ABCD', 'ABDC'])
     # ldr.draw_intersect(v1='ABCD', v2='ABDC')

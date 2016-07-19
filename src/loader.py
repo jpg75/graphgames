@@ -25,15 +25,42 @@ class LeafVertexDetector(DFSVisitor):
             print "detected leaf node: ", u
 
 
-class GTLoader(object):
+class BasicLoader(object):
     def __init__(self):
         self.index = dict()  # maps lists (node states) to name index
         self.g = Graph()
+        # internal property for edges:
+        self.g.edge_properties['move'] = self.g.new_edge_property("string")
+
+    def load_matrix(self, filename='', limit=-1):
+        assert filename != ''
+
+        counter = 1
+        # reset the index to avoid conflicts
+        self.index.clear()
+        self.index['counter'] = 0
+        self.g.clear()
+
+        try:
+            with open(filename, 'r') as f:
+                for line in f:
+                    if limit != -1 and counter >= limit: break
+
+                    print "processing line %d: %s" % (counter, line)
+                    counter += 1
+
+                    self.make_gt_line(line)
+
+        except IOError as ioe:
+            print ioe
+
+
+class GTLoader(BasicLoader):
+    def __init__(self):
+        super(GTLoader, self).__init__()
         # making internal properties for vertex:
         for item in _MATLAB_CARD_LAYOUT:
             self.g.vertex_properties[item] = self.g.new_vertex_property("string")
-        # internal property for edges:
-        self.g.edge_properties['move'] = self.g.new_edge_property("string")
 
     def make_gt_line(self, line):
         line = line.replace('{', '[')
@@ -68,27 +95,9 @@ class GTLoader(object):
 
         ab = self.g.add_edge(self.index[a_data.__repr__()], self.index[b_data.__repr__()])
         self.g.edge_properties['move'][ab] = m
-        # rels[m] += 1
 
-    def loadMatrix(self, filename="data/TTT-matrix.txt", limit=-1):
-        counter = 1
-        # reset the index to avoid conflicts
-        self.index.clear()
-        self.index['counter'] = 0
-        self.g.clear()
-
-        try:
-            with open(filename, 'r') as f:
-                for line in f:
-                    if limit != -1 and counter >= limit: break
-
-                    print "processing line %d: %s" % (counter, line)
-                    counter += 1
-
-                    self.make_gt_line(line)
-
-        except IOError as ioe:
-            print ioe
+    def load_matrix(self, filename="data/TTT-matrix.txt", limit=-1):
+        super(GTLoader, self).load_matrix(filename, limit)
 
     def show_betweeness(self):
         assert self.g.num_vertices(ignore_filter=True) > 0
@@ -97,10 +106,10 @@ class GTLoader(object):
         pos = sfdp_layout(gv, gamma=1.5)
         bv, be = betweenness(gv)
         move = gv.edge_properties['move']
-        vcmap = pl.cm.gist_heat
+        vc_map = pl.cm.gist_heat
         graph_draw(gv, pos, vertex_size=prop_to_size(bv, mi=1, ma=15), output_size=(1000, 1000),
                    vertex_fill_color=bv, edge_text=move, edge_text_size=8,
-                   edge_pen_width=prop_to_size(be, mi=0.5, ma=5), vcmap=vcmap)
+                   edge_pen_width=prop_to_size(be, mi=0.5, ma=5), vcmap=vc_map)
 
     def show_min_span_tree(self, filter=False):
         assert self.g.num_vertices(ignore_filter=True) > 0
@@ -126,31 +135,27 @@ class GTLoader(object):
         target = gv.vertex_properties['target']
         move = gv.edge_properties['move']
 
-
         dfs_search(gv, gv.vertex(0), LeafVertexDetector(leaf, target))
         print "Available leaf nodes: %d" % sum([item for item in leaf.a if item == 1])
         print gv.edge_properties
         print gv.list_properties()
 
-        # g1 = Graph()
         edge_list = []
         for path in all_shortest_paths(gv, gv.vertex(0), gv.vertex(1036)):
             print path
             for i in range(0, len(path) - 1):
                 edge_list.append((path[i], path[i + 1]))
                 e = gv.edge(gv.vertex(path[i]), gv.vertex(path[i + 1]))
-                # print e
                 gv.edge_properties.asp[e] = True
 
         print edge_list
-        # g1.add_edge_list(edge_list, hashed=True)
 
         # Graph with all shortest paths:
         path = gv.edge_properties['asp']
         print path
         # gv.set_edge_filter(path)
-        #pos = sfdp_layout(gv, gamma=2.5)
-        #graph_draw(gv, pos=pos, vertex_size=5.0, vertex_text=gv.vertex_index, edge_text=move,
+        # pos = sfdp_layout(gv, gamma=2.5)
+        # graph_draw(gv, pos=pos, vertex_size=5.0, vertex_text=gv.vertex_index, edge_text=move,
         #           output_size=(1000, 1000), vertex_color=leaf, edge_color=path,
         # edge_pen_width=1.0)
 
@@ -173,9 +178,9 @@ class GTLoader(object):
 
 if __name__ == '__main__':
     ldr = GTLoader()
-    # ldr.loadMatrix()
-    ldr.g.load('data/TTTg.xml.gz')
-    #ldr.show_betweeness()
-    #ldr.show_min_span_tree(filter=True)
-    ldr.show_start_end_path()
+    ldr.load_matrix()
+    # ldr.g.load('data/TTTg.xml.gz')
+    ldr.show_betweeness()
+    # ldr.show_min_span_tree(filter=True)
+    # ldr.show_start_end_path()
     # print ldr.index

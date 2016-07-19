@@ -85,35 +85,41 @@ def spanning(g, multigoal=[], verbose=False):
 
 
 def split_check(g, goals=[]):
-        """
-        Check if the graph can be split according to the given vertexes in the goal list.
-        EXPERIMENTAL!
-        Based on shortest distance matrix. Works with just 2 goals for now.
+    """
+    Check if the graph can be split according to the given vertexes in the goal list.
+    EXPERIMENTAL!
+    Based on shortest distance matrix. Works with just 2 goals for now.
 
-        :param g: graph
-        :param goals: list of vertexes
-        :return:
-        """
-        assert len(goals) >= 2
+    :param g: graph
+    :param goals: list of vertexes
+    :return:
+    """
+    assert len(goals) >= 2
 
-        # paths =
-        # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
-        #for path in all_paths(g, goals[0], goals[1], cutoff=6):
-        #    print "Lenght: %d : %s" % (len(path), path)
+    # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
+    # for path in all_paths(g, goals[0], goals[1], cutoff=6):
+    #    print "Lenght: %d : %s" % (len(path), path)
+    # With big graphs we cannot afford to calculate the dist matrix, just vectors
+    distances = {}
+    for v in goals:
+        distances[v] = shortest_distance(g, v)  # all distances
 
-        dist = shortest_distance(g)  # all distances
+    print distances
+    for v in distances:
+        print distances[v].a
 
-        print dist
-        for goal in goals:
-            print dist[goal].a
+    # av1 = dist[ldr.index['ABCD']].a
+    # av2 = dist[ldr.index['ADBC']].a
+    # print ldr.index['ABDC']
+    # print(av1)
+    # print(av2)
+    # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
 
-        # av1 = dist[ldr.index['ABCD']].a
-        # av2 = dist[ldr.index['ADBC']].a
-        # print ldr.index['ABDC']
-        # print(av1)
-        # print(av2)
-        result = [x[0] - x[1] for x in zip(dist[goals[0]].a, dist[goals[1]].a)]
-        print result
+    # print result[1000]
+    # print
+
+    #print result
+
 
 if __name__ == '__main__':
     gr = Graph()
@@ -138,19 +144,25 @@ if __name__ == '__main__':
     gr.add_edge(f, c)
     gr.add_edge(g, e)
 
-    for path in all_paths(gr, 0, 4):
+    goals = [a, e]
+
+    # x,y:
+    for path in all_paths(gr, goals[0], goals[1]):
+        print "Lenght: %d : %s" % (len(path), path)
+    # y,x:
+    for path in all_paths(gr, goals[1], goals[0]):
         print "Lenght: %d : %s" % (len(path), path)
 
-    # g2 = spanning(gr, [gr.vertex(0), gr.vertex(4)])
-    emap = spanning(gr, [gr.vertex(0), gr.vertex(4)], verbose=True)
-    # emap = spanningTree(gr, [gr.vertex(0)], verbose=True)
+    dist = shortest_distance(gr)
+    for v in gr.vertices():
+        print(dist[v].a)
 
-    # tmap = min_spanning_tree(gr, root=gr.vertex(0))
-    # u = GraphView(gr, efilt=tmap)
+    print [x[0] - x[1] for x in zip(dist[goals[0]].a, dist[goals[1]].a)]
+
+    emap = spanning(gr, goals, verbose=False)
     u = GraphView(gr, efilt=emap)
 
-    print gr
-
-    pos = sfdp_layout(u, gamma=1.5)
-    graph_draw(gr, pos, output_size=(1000, 1000), vertex_text=gr.vertex_index, edge_text_size=8)
-    graph_draw(u, pos, output_size=(1000, 1000), vertex_text=u.vertex_index, edge_text_size=8)
+    posu = sfdp_layout(u, gamma=1.5)
+    posgr = sfdp_layout(gr, gamma=1.5)
+    graph_draw(gr, posgr, output_size=(1000, 1000), vertex_text=gr.vertex_index, edge_text_size=8)
+    graph_draw(u, posu, output_size=(1000, 1000), vertex_text=u.vertex_index, edge_text_size=8)
