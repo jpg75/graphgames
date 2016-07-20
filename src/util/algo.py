@@ -3,6 +3,8 @@ __author__ = 'Gian Paolo Jesi'
 from graph_tool import Graph, GraphView
 from graph_tool.topology import min_spanning_tree, all_paths, shortest_distance
 from graph_tool.draw import *
+from graph_tool.util import find_vertex
+import string
 
 
 def spanningTree(g, multigoal=[], verbose=True):
@@ -58,7 +60,13 @@ def spanning(g, multigoal=[], verbose=False):
     """
     assert len(multigoal) != 0
 
+    # from timeit import default_timer as timer
+    # start = timer()
     gv = g.copy()
+    # end = timer()
+    # print "time for copy: ", end - start
+
+    gv.set_fast_edge_removal()  # a bit faster
     spanningG = gv.new_edge_property('bool')
     actual = multigoal
 
@@ -108,43 +116,66 @@ def split_check(g, goals=[]):
     for v in distances:
         print distances[v].a
 
-    # av1 = dist[ldr.index['ABCD']].a
-    # av2 = dist[ldr.index['ADBC']].a
-    # print ldr.index['ABDC']
-    # print(av1)
-    # print(av2)
-    # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
+        # av1 = dist[ldr.index['ABCD']].a
+        # av2 = dist[ldr.index['ADBC']].a
+        # print ldr.index['ABDC']
+        # print(av1)
+        # print(av2)
+        # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
 
-    # print result[1000]
-    # print
+        # print result[1000]
+        # print
 
-    #print result
+        # print result
+
+
+def make_toy_graph(n=7,
+                   tuples=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'a'), ('b', 'd'), ('c', 'g'),
+                           ('d', 'a'), ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'),
+                           ('g', 'e')], as_undirected=False):
+    """
+    Generate a toy graph for experimenting algorithms. By default the graph has 7 vertexes linked
+    by 13 edges. Each vertex is represented by a lowercase letter.
+
+    :param n: number of vertexes; default 7
+    :param tuples: list of pairs representing the edges. It is the toy graph in my notebook :-)
+    :param as_undirected: makes the graph undirected, but keeping an explicit directional
+    representation. Essentially, the graph is still directed and each edge is reproduced in the
+    opposite direction.
+    :return:
+    """
+    assert n <= 26
+
+    if as_undirected:
+        tuples.extend([(item[1], item[0]) for item in tuples])
+        print tuples
+
+    g = Graph()
+    vertex_it = g.add_vertex(n=n)
+    g.vertex_properties['name'] = g.new_vertex_property('string')
+    alphabet = list(string.ascii_lowercase)
+    d = dict()
+    i = 0
+    for v in vertex_it:
+        d[alphabet[i]] = v
+        g.vp.name[v] = alphabet[i]
+        i += 1
+
+    vt = [(d[item[0]], d[item[1]]) for item in tuples]
+    g.add_edge_list(vt)
+
+    return g
 
 
 if __name__ == '__main__':
-    gr = Graph()
-    a = gr.add_vertex()
-    b = gr.add_vertex()
-    c = gr.add_vertex()
-    d = gr.add_vertex()
-    e = gr.add_vertex()
-    f = gr.add_vertex()
-    g = gr.add_vertex()
-    gr.add_edge(a, b)
-    gr.add_edge(a, d)
-    gr.add_edge(a, c)
-    gr.add_edge(b, a)
-    gr.add_edge(b, d)
-    gr.add_edge(c, g)
-    gr.add_edge(d, a)
-    gr.add_edge(d, f)
-    gr.add_edge(d, g)
-    gr.add_edge(e, b)
-    gr.add_edge(e, d)
-    gr.add_edge(f, c)
-    gr.add_edge(g, e)
+    as_undir_tuples = [('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'd'), ('c', 'g'),
+                       ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'), ('g', 'e')]
+    # gr = make_toy_graph()
+    gr = make_toy_graph(tuples=as_undir_tuples, as_undirected=True)
 
-    goals = [a, e]
+    print gr
+    goals = ['a', 'e']
+    goals = [find_vertex(gr, gr.vp.name, item)[0] for item in goals]
 
     # x,y:
     for path in all_paths(gr, goals[0], goals[1]):
@@ -162,7 +193,9 @@ if __name__ == '__main__':
     emap = spanning(gr, goals, verbose=False)
     u = GraphView(gr, efilt=emap)
 
-    posu = sfdp_layout(u, gamma=1.5)
-    posgr = sfdp_layout(gr, gamma=1.5)
-    graph_draw(gr, posgr, output_size=(1000, 1000), vertex_text=gr.vertex_index, edge_text_size=8)
-    graph_draw(u, posu, output_size=(1000, 1000), vertex_text=u.vertex_index, edge_text_size=8)
+    pos_u = sfdp_layout(u, gamma=1.5)
+    pos_gr = sfdp_layout(gr, gamma=1.5)
+    graph_draw(gr, pos_gr, output_size=(1000, 1000), vertex_text=gr.vp.name,
+               edge_text_size=8)
+    graph_draw(u, pos_u, output_size=(1000, 1000), vertex_text=u.vp.name,
+               edge_text_size=8)
