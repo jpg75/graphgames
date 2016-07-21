@@ -5,9 +5,10 @@ from graph_tool.topology import min_spanning_tree, all_paths, shortest_distance
 from graph_tool.draw import *
 from graph_tool.util import find_vertex
 import string
+import numpy as np
 
 
-def spanningTree(g, multigoal=[], verbose=True):
+def spanning_tree(g, multigoal=[], verbose=True):
     """
     Generate a spanning tree for the given graph g.
 
@@ -107,26 +108,33 @@ def split_check(g, goals=[]):
     # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
     # for path in all_paths(g, goals[0], goals[1], cutoff=6):
     #    print "Lenght: %d : %s" % (len(path), path)
-    # With big graphs we cannot afford to calculate the dist matrix, just vectors
-    distances = {}
-    for v in goals:
-        distances[v] = shortest_distance(g, v)  # all distances
+    # With big graphs we cannot afford to calculate the distances matrix, just vectors
+    # distances = {}
+    distances = shortest_distance(gr)
 
-    print distances
-    for v in distances:
-        print distances[v].a
+    mat = np.array([distances[v].a for v in gr.vertices()])
+    # print mat
+    mat = mat.T
+    # print mat
 
-        # av1 = dist[ldr.index['ABCD']].a
-        # av2 = dist[ldr.index['ADBC']].a
-        # print ldr.index['ABDC']
-        # print(av1)
-        # print(av2)
-        # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
+    print mat[g.vertex_index[goals[0]]] - mat[g.vertex_index[goals[1]]]
+    # print distances
+    # for v in distances:
+    #    print "Vertex %s with distances vector: %s" % (gr.vp.name[v], distances[v].a)
 
-        # print result[1000]
-        # print
+    # for i in distances:
+    #    for j in distances:
+    #        if i != j:
+    #            print "diff %s - %s : %s" % (
+    #                gr.vp.name[i], gr.vp.name[j], [x[0] - x[1] for x in zip(distances[i].a,
+    #                                                                        distances[j].a)])
 
-        # print result
+    # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
+
+    # print result[1000]
+    # print
+
+    # print result
 
 
 def make_toy_graph(n=7,
@@ -170,25 +178,25 @@ def make_toy_graph(n=7,
 if __name__ == '__main__':
     as_undir_tuples = [('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'd'), ('c', 'g'),
                        ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'), ('g', 'e')]
-    # gr = make_toy_graph()
-    gr = make_toy_graph(tuples=as_undir_tuples, as_undirected=True)
+    gr = make_toy_graph()
+    # gr = make_toy_graph(tuples=as_undir_tuples, as_undirected=True)
 
     print gr
     goals = ['a', 'e']
     goals = [find_vertex(gr, gr.vp.name, item)[0] for item in goals]
 
-    # x,y:
-    for path in all_paths(gr, goals[0], goals[1]):
-        print "Lenght: %d : %s" % (len(path), path)
-    # y,x:
-    for path in all_paths(gr, goals[1], goals[0]):
-        print "Lenght: %d : %s" % (len(path), path)
+    # # x,y:
+    # for path in all_paths(gr, goals[0], goals[1]):
+    #     print "Lenght: %d : %s" % (len(path), path)
+    # # y,x:
+    # for path in all_paths(gr, goals[1], goals[0]):
+    #     print "Lenght: %d : %s" % (len(path), path)
 
     dist = shortest_distance(gr)
     for v in gr.vertices():
         print(dist[v].a)
 
-    print [x[0] - x[1] for x in zip(dist[goals[0]].a, dist[goals[1]].a)]
+    split_check(gr, goals)
 
     emap = spanning(gr, goals, verbose=False)
     u = GraphView(gr, efilt=emap)
