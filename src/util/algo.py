@@ -1,10 +1,12 @@
 __author__ = 'Gian Paolo Jesi'
 
 from graph_tool import Graph, GraphView
-from graph_tool.topology import min_spanning_tree, all_paths, shortest_distance
+from graph_tool.topology import shortest_distance
+from itertools import combinations
+from collection import make_toy_graph
 from graph_tool.draw import *
 from graph_tool.util import find_vertex
-import string
+from math import factorial
 import numpy as np
 
 
@@ -61,14 +63,10 @@ def spanning(g, multigoal=[], verbose=False):
     """
     assert len(multigoal) != 0
 
-    # from timeit import default_timer as timer
-    # start = timer()
     gv = g.copy()
-    # end = timer()
-    # print "time for copy: ", end - start
 
     gv.set_fast_edge_removal()  # a bit faster
-    spanningG = gv.new_edge_property('bool')
+    spanningg = gv.new_edge_property('bool')
     actual = multigoal
 
     while len(actual) != 0:
@@ -84,119 +82,110 @@ def spanning(g, multigoal=[], verbose=False):
 
         # attaches the predecessor to the spanning:
         for e in predecessors:
-            spanningG[e] = 1
+            spanningg[e] = 1
 
         actual = frozenset([e.source() for e in predecessors])
         if verbose:
             print "actual: ", actual
 
-    return spanningG
+    return spanningg
 
 
-def split_check(g, goals=[]):
+def split_check(g, goals=[], verbose=False):
     """
     Check if the graph can be split according to the given vertexes in the goal list.
     EXPERIMENTAL!
-    Based on shortest distance matrix. Works with just 2 goals for now.
+    Based on shortest distance matrix.
 
     :param g: graph
-    :param goals: list of vertexes
+    :param goals: list of vertexes (goals)
     :return:
     """
     assert len(goals) >= 2
 
-    # print "Found %d distinct paths between node %s and node %s" % (len(paths), source, target)
-    # for path in all_paths(g, goals[0], goals[1], cutoff=6):
-    #    print "Lenght: %d : %s" % (len(path), path)
-    # With big graphs we cannot afford to calculate the distances matrix, just vectors
-    # distances = {}
-    distances = shortest_distance(gr)
+    any_split = False
+    distances = shortest_distance(g)
 
-    mat = np.array([distances[v].a for v in gr.vertices()])
-    # print mat
+    mat = np.array([distances[v].a for v in g.vertices()])
     mat = mat.T
-    # print mat
 
-    print mat[g.vertex_index[goals[0]]] - mat[g.vertex_index[goals[1]]]
-    # print distances
-    # for v in distances:
-    #    print "Vertex %s with distances vector: %s" % (gr.vp.name[v], distances[v].a)
+    ng = len(goals)
+    rows = factorial(ng) / 2 / factorial(ng - 2)
+    result = np.zeros(shape=(rows, g.num_vertices()))
 
-    # for i in distances:
-    #    for j in distances:
-    #        if i != j:
-    #            print "diff %s - %s : %s" % (
-    #                gr.vp.name[i], gr.vp.name[j], [x[0] - x[1] for x in zip(distances[i].a,
-    #                                                                        distances[j].a)])
+    index = 0
+    for subset in combinations(goals, 2):
+        row = mat[g.vertex_index[subset[0]]] - mat[g.vertex_index[subset[1]]]
+        if verbose: print row
 
-    # result = [x[0] - x[1] for x in zip(distances[goals[0]].a, distances[goals[1]].a)]
+        if not any_split:
+            # print np.count_nonzero(row), g.num_vertices()
+            if np.count_nonzero(row) == g.num_vertices():
+                any_split = True  # found a split
 
-    # print result[1000]
-    # print
+        result[index] = row
+        index += 1
 
-    # print result
+    return any_split, result
 
 
-def make_toy_graph(n=7,
-                   tuples=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'a'), ('b', 'd'), ('c', 'g'),
-                           ('d', 'a'), ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'),
-                           ('g', 'e')], as_undirected=False):
+def even_odd(g, goals=[], letters=False, verbose=False):
     """
-    Generate a toy graph for experimenting algorithms. By default the graph has 7 vertexes linked
-    by 13 edges. Each vertex is represented by a lowercase letter.
+    Generate the even/odd matrix. Essentially, it calculates the distance matrix and converts it
+    into a 0/1 matrix just keeping the information about even (1) or odd (0) distances.
 
-    :param n: number of vertexes; default 7
-    :param tuples: list of pairs representing the edges. It is the toy graph in my notebook :-)
-    :param as_undirected: makes the graph undirected, but keeping an explicit directional
-    representation. Essentially, the graph is still directed and each edge is reproduced in the
-    opposite direction.
+    :param g: the graph
+    :param goals: list of vertexes (goals)
+    :param letters: whether or not using letters ('E', 'O') into even-odd matrix. Default False.
+    :param verbose:
     :return:
     """
-    assert n <= 26
+    assert len(goals) >= 2
 
-    if as_undirected:
-        tuples.extend([(item[1], item[0]) for item in tuples])
-        print tuples
+    distances = shortest_distance(g)
+    eo = np.zeros(shape=(g.num_vertices(), g.num_vertices()))
+    eo = eo.T
+    for v in g.vertices():
+        print distances[v].a
 
-    g = Graph()
-    vertex_it = g.add_vertex(n=n)
-    g.vertex_properties['name'] = g.new_vertex_property('string')
-    alphabet = list(string.ascii_lowercase)
-    d = dict()
-    i = 0
-    for v in vertex_it:
-        d[alphabet[i]] = v
-        g.vp.name[v] = alphabet[i]
-        i += 1
+    index = 0
+    for v in g.vertices():
+        j = 0
+        for value in distances[v].a:
+            # print value
+            if letters:
+                eo[index][j] = 'E' if value % 2 == 0 else 'O'
+            else:
+                eo[index][j] = 1.0 if value % 2 == 0 else 0.0
+            j += 1
 
-    vt = [(d[item[0]], d[item[1]]) for item in tuples]
-    g.add_edge_list(vt)
+        index += 1
 
-    return g
+    # transforming even-odd
+    new_order = []
+    for item in goals:
+        new_order.append(g.vertex_index[item])
+    for item in [x for x in g.vertices() if x not in goals]:
+        new_order.append(g.vertex_index[item])
+    if verbose:
+        print "Reordering EO-matrix as follows: %s" % new_order
+
+    eo_new = eo[:, new_order][new_order]
+    return eo, eo_new
 
 
 if __name__ == '__main__':
     as_undir_tuples = [('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'd'), ('c', 'g'),
-                       ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'), ('g', 'e')]
-    gr = make_toy_graph()
-    # gr = make_toy_graph(tuples=as_undir_tuples, as_undirected=True)
+                       ('d', 'f'), ('d', 'g'), ('e', 'b'), ('e', 'd'), ('f', 'c'),
+                       ('g', 'e')]
+    # gr = make_toy_graph()
+    gr = make_toy_graph(tuples=as_undir_tuples, as_undirected=True)
 
-    print gr
-    goals = ['a', 'e']
+    goals = ['e', 'f', 'a']
     goals = [find_vertex(gr, gr.vp.name, item)[0] for item in goals]
 
-    # # x,y:
-    # for path in all_paths(gr, goals[0], goals[1]):
-    #     print "Lenght: %d : %s" % (len(path), path)
-    # # y,x:
-    # for path in all_paths(gr, goals[1], goals[0]):
-    #     print "Lenght: %d : %s" % (len(path), path)
-
-    dist = shortest_distance(gr)
-    for v in gr.vertices():
-        print(dist[v].a)
-
-    split_check(gr, goals)
+    print split_check(gr, goals, verbose=True)
+    print even_odd(gr, goals, verbose=True)
 
     emap = spanning(gr, goals, verbose=False)
     u = GraphView(gr, efilt=emap)
