@@ -10,12 +10,13 @@ from math import factorial
 import numpy as np
 
 
-def spanning_tree(g, multigoal=[], verbose=True):
+def spanning_tree(g, multigoal=[], verbose=False):
     """
     Generate a spanning tree for the given graph g.
 
     :param g: Graph based object
     :param multigoal: list of goal vertexes (where the spanning starts)
+    :param verbose: default disabled
     :return: an boolean edge property map, marking the edges of the spanning tree
     """
     assert len(multigoal) != 0
@@ -59,6 +60,7 @@ def spanning(g, multigoal=[], verbose=False):
 
     :param g: Graph based object
     :param multigoal: list of goal vertexes (where the spanning starts)
+    :param verbose: default disabled
     :return: an boolean edge property map, marking the edges of the spanning
     """
     assert len(multigoal) != 0
@@ -66,7 +68,7 @@ def spanning(g, multigoal=[], verbose=False):
     gv = g.copy()
 
     gv.set_fast_edge_removal()  # a bit faster
-    spanningg = gv.new_edge_property('bool')
+    spanning_g = gv.new_edge_property('bool')
     actual = multigoal
 
     while len(actual) != 0:
@@ -82,24 +84,25 @@ def spanning(g, multigoal=[], verbose=False):
 
         # attaches the predecessor to the spanning:
         for e in predecessors:
-            spanningg[e] = 1
+            spanning_g[e] = 1
 
         actual = frozenset([e.source() for e in predecessors])
         if verbose:
             print "actual: ", actual
 
-    return spanningg
+    return spanning_g
 
 
 def split_check(g, goals=[], verbose=False):
     """
     Check if the graph can be split according to the given vertexes in the goal list.
-    EXPERIMENTAL!
     Based on shortest distance matrix.
 
     :param g: graph
     :param goals: list of vertexes (goals)
-    :return:
+    :param verbose: default disabled
+    :return: a pair: (bool, NumPy Array) where the bool represents if we have any split in the graph
+    and the string is the distance differences for every combination of goals.
     """
     assert len(goals) >= 2
 
@@ -116,7 +119,8 @@ def split_check(g, goals=[], verbose=False):
     index = 0
     for subset in combinations(goals, 2):
         row = mat[g.vertex_index[subset[0]]] - mat[g.vertex_index[subset[1]]]
-        if verbose: print row
+        if verbose:
+            print row
 
         if not any_split:
             # print np.count_nonzero(row), g.num_vertices()
@@ -137,7 +141,7 @@ def even_odd(g, goals=[], letters=False, verbose=False):
     :param g: the graph
     :param goals: list of vertexes (goals)
     :param letters: whether or not using letters ('E', 'O') into even-odd matrix. Default False.
-    :param verbose:
+    :param verbose: default disabled
     :return:
     """
     assert len(goals) >= 2
