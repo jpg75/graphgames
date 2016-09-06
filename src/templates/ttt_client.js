@@ -1,43 +1,63 @@
-cards_colors = {"2H": "red", "3H": "red", "4H": "red",
+const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
+let player = 'CK';
 
 $(document).ready(function () {
 /* initial card positions:
 NK    N   UP   C    CK   T	GC	PL
 3C   4H   2H   3H   2C   4C	2H	ck
 */
-
       window.startPos = window.endPos = {};
-	  /* $('<div>' + numbers[i] + '</div>').data( 'number', numbers[i] ).attr( 'id', 'card'+numbers[i] ).appendTo( '#cardPile' )
-	*/
+	  
       init();
       makeDraggable();
 
       $('.cardSlot').droppable({
         hoverClass: 'hoverClass',
+        over: function( event, ui ) {
+        	over_what = $(ui.draggable);
+        	},
+
         drop: function(event, ui) {
           var $from = $(ui.draggable),
               $fromParent = $from.parent(),
               $to = $(this).children(),
               $toParent = $(this);
 
+			// Invert the players when an exchange is legal
+			if (! $toParent.is($fromParent)) {
+		  		if (player=='CK') {
+		  			player = 'NK';
+          		}
+          		else {
+          			player = 'CK';
+          		}
+          		console.log("Are the same!");
+		  	}
+	
+		  console.log('From: ', $from);
+		  console.log('To: ', $to);
+
           window.endPos = $to.offset();
 
           swap($from, $from.offset(), window.endPos, 200);
-          swap($to, window.endPos, window.startPos, 1000, function() {
+          swap($to, window.endPos, window.startPos, 500, function() {
             $toParent.html($from.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             $fromParent.html($to.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             makeDraggable();
           });
-        }
+
+	    }
       });
 
       function makeDraggable() {
-		/* var checkedValue = $('.limitDrag').is(":checked");*/
-		var checkedValue = document.getElementById("limitDrag").checked;
+		/* let checkedValue = $('.limitDrag').is(":checked");*/
+		let checkedValue = document.getElementById("limitDrag").checked;
 		console.log(checkedValue); 
 
+		/* $('.card').draggable({ */
         $('.card').draggable({
+          disabled: true,
           containment: '#content',
           zIndex: 99999,
           revert: 'invalid',
@@ -45,6 +65,10 @@ NK    N   UP   C    CK   T	GC	PL
             window.startPos = $(this).offset();
           }
         });
+
+		/* Enable the draggable(s) corresponding to the NK or CK cards*/
+		$('#'+player+ '> .card').draggable('enable');
+		
       }
 
       function swap($el, fromPos, toPos, duration, callback) {
@@ -57,11 +81,8 @@ NK    N   UP   C    CK   T	GC	PL
     });
 
 function init(){
-    var i = 0;
-	/* $('.card').data('color', cards_colors.($(this).text()) );*/
-	/* $('.card').data('color', 'red' );
-	$('.card').data('number', $(this).text() );
-	$('.card').data('fig', '');*/
+    let i = 0;
+	
 	$('.card').each(function(index, el) {
 		$( this ).data('color', 'red');
 		console.log( index + ": " + $( this ).data('color') );
@@ -74,7 +95,7 @@ function init(){
 
 /* Called when the PASS button is pressed. */
 function passMove(){
-	var output_n = $('.card').data('number');
+	let output_n = $('.card').data('number');
 	console.log("Data: ", output_n);
 }
 
