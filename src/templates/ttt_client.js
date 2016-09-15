@@ -2,8 +2,20 @@ const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
 const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
                     "2C": "2C.png", "3C": "3C.png", "4C": "4C.png"};
-let player = 'CK', score = 0, gameCard = '2H';
 const allowed_moving_zones = ["U", "T", "C", "N"];
+
+let player = 'CK', score = 0, gameCard = '2H';
+let username = '';
+
+let socket = null; 
+/* let socket = io.connect('http://' + document.domain + ':' + location.port);
+socket.on('connect', function() {
+    //socket.emit('my event', {data: 'I\'m connected!'});
+	console.log('Connected to server @ '+document.domain +':'+location.port);
+});
+
+socket.on('hand', handleHand());
+*/
 
 $(document).ready(function () {
 	/* initial card positions:
@@ -14,6 +26,7 @@ $(document).ready(function () {
 	  
 	initCardsData();
 	makeDraggable();
+	login();
 
     $('.cardSlot').droppable({
     	hoverClass: 'hoverClass',
@@ -67,24 +80,6 @@ $(document).ready(function () {
 });
 
 /**
-* Generate a sort of metadata inside the card slots
-*/ 
-function initCardsData(){
-	$('.card').each(function(index, el) {
-		let key = $(this).children().attr("src").slice(-6, -4);
-		
-		//let key = $(this).text();
-		console.log('key: '+key);
-		$(this).data('color', cards_colors[key] );
-		console.log( index + ": " + $( this ).data('color') );
-		$(this).data('number', key.charAt(0) );
-		$(this).data('card', key );
-		console.log( index + ": " + $( this ).data('number') );
-		console.log( index + ": " + $( this ).data('card') );
-	});
-}
-
-/**
 * Make every card draggable, but disabled. Only the card's current player is made 
 enabled and emphasized.
 */
@@ -106,6 +101,27 @@ function makeDraggable() {
 	$('#'+player+ '> .card').draggable('enable');
 	emphasizeActivePlayer();
 	initCardsData();
+}
+
+/*******************************************************************
+* Game related functions
+*/
+
+/**
+* Generate a sort of metadata inside the card slots
+*/ 
+function initCardsData(){
+	$('.card').each(function(index, el) {
+		let key = $(this).children().attr("src").slice(-6, -4);
+
+		console.log('key: '+key);
+		$(this).data('color', cards_colors[key] );
+		console.log( index + ": " + $( this ).data('color') );
+		$(this).data('number', key.charAt(0) );
+		$(this).data('card', key );
+		console.log( index + ": " + $( this ).data('number') );
+		console.log( index + ": " + $( this ).data('card') );
+	});
 }
 
 /**
@@ -156,6 +172,10 @@ function invertPlayers($fromParent) {
 	}
 }
 
+/*******************************************************************
+* HTML interface functions
+*/
+
 /** 
 * Called when the PASS button is pressed. Invert the players and regenerate the 
 * card draggables.
@@ -168,6 +188,28 @@ function passMove(){
 	makeDraggable();
 }
 
+/*******************************************************************
+* Network functions
+*/
+
+/**
+* Log into the server. Initialize the connection.
+*/
+function login() {
+	let id = Math.random();
+	username = window.prompt("Please, enter your username", 'User_'+String(id).slice(-5));
+
+	if (username == null) username = 'User_'+String(id).slice(-5);
+
+	// socket.emit('login', {'username': username});
+}
+
+/**
+* Receive the next game hand in json format.
+*/
+function handleHand() {
+	;
+}
 // graph decompositions, Diestel
 // Rasetti
 // Knoblock
