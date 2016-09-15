@@ -1,9 +1,9 @@
 body {
-  margin: 30px;
-  font-family: "Georgia", serif;
-  line-height: 1.8em;
-  color: #333;
-  background: green;
+	margin: 30px;
+	font-family: "Georgia", serif;
+	line-height: 1.8em;
+	color: #333;
+	background: green;
 }
 
 th,td {
@@ -12,30 +12,31 @@ th,td {
 }
 
 #content {
-  margin: 80px 70px;
-  text-align: left;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  user-select: none;
+	margin: 80px 70px;
+	text-align: center;
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
 }
+
 .dragCheckBox{;}
 
 .mylabel {
-  margin: 20px;
-  /*width: 20px;*/
-  text-align: center;
-  padding: 5px;
-  padding-bottom: 0px;
-  font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+	margin: 20px;
+	/*width: 20px;*/
+	text-align: center;
+	padding: 5px;
+	padding-bottom: 0px;
+	font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
 }
 
 .cardSlot {
     float: left;
     width: 100px;
-    height: 80px;
+    height: 120px;
     padding: 10px;
-    padding-top: 40px;
-    padding-bottom: 0;
+    padding-top: 10px;
+    padding-bottom: 10px;
     border: 2px solid #333;
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;
@@ -48,25 +49,33 @@ th,td {
     float: left; 
     /* margin-left: 100px; */
 	margin: 20px;
-    width: 100px;
-    height: 50px;
+    width: 90px;
+    height: 120px;
     /* border: 1px solid red; */
 	padding: 5px;
 }
 
-    .card {
-      width: 100px;
-      height: 50px;
-      background: white;
-      text-align: center;
-      line-height: 50px;
-    }
-    .ui-draggable-dragging {
-      background: red;
-    }
+.card {
+	width: 90px;
+	height: 120px;
+	background: white;
+	text-align: center;
+	line-height: 50px;
+}
 
-    .hoverClass {
-      border: 2px solid red;
-    }
+.card-img {
+	height: 120px;
+	width: 90px;
+}
+
+.ui-draggable-dragging {
+	background: red;
+}
+
+.hoverClass {
+	border: 2px solid red;
+}
+
+
 
 

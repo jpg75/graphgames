@@ -1,5 +1,7 @@
 const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
+const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
+                    "2C": "2C.png", "3C": "3C.png", "4C": "4C.png"};
 let player = 'CK', score = 0, gameCard = '2H';
 const allowed_moving_zones = ["U", "T", "C", "N"];
 
@@ -69,14 +71,16 @@ $(document).ready(function () {
 */ 
 function initCardsData(){
 	$('.card').each(function(index, el) {
-		let key = $(this).text();
+		let key = $(this).children().attr("src").slice(-6, -4);
+		
+		//let key = $(this).text();
 		console.log('key: '+key);
 		$(this).data('color', cards_colors[key] );
-		// $( this ).data('color', 'red');
 		console.log( index + ": " + $( this ).data('color') );
-		$(this).data('number', $(this).text().charAt(0) );
+		$(this).data('number', key.charAt(0) );
+		$(this).data('card', key );
 		console.log( index + ": " + $( this ).data('number') );
-		console.log( index + ": " + $( this ).text() );
+		console.log( index + ": " + $( this ).data('card') );
 	});
 }
 
