@@ -2,6 +2,8 @@ const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
 const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
                     "2C": "2C.png", "3C": "3C.png", "4C": "4C.png"};
+const covered_cards = {"U": False, "C": True, "N": True, 
+						"T": False, "CK": False, "NK": False};
 const allowed_moving_zones = ["U", "T", "C", "N"];
 
 let player = 'CK', score = 0, gameCard = '2H';
