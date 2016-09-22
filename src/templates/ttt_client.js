@@ -2,11 +2,11 @@ const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
 const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
                     "2C": "2C.png", "3C": "3C.png", "4C": "4C.png"};
-const covered_cards = {"U": False, "C": True, "N": True, 
-						"T": False, "CK": False, "NK": False};
+const covered_cards = {"U": false, "C": true, "N": true, 
+						"T": false, "CK": false, "NK": false};
 const allowed_moving_zones = ["U", "T", "C", "N"];
 
-let player = 'CK', score = 0, gameCard = '2H';
+let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
 
 let socket = null; 
@@ -103,6 +103,16 @@ function makeDraggable() {
 	$('#'+player+ '> .card').draggable('enable');
 	emphasizeActivePlayer();
 	initCardsData();
+	// set cards flipped or not:
+	//
+	// Set card bindings to flip behavior:
+	$('.card').dblclick(
+					function() {
+						console.log('flipping card: '+ $(this).data('card') )
+						$(this).find('img').toggle();
+						// console.log('card file: '+card_file);
+					} );
+	
 }
 
 /*******************************************************************
@@ -114,14 +124,15 @@ function makeDraggable() {
 */ 
 function initCardsData(){
 	$('.card').each(function(index, el) {
-		let key = $(this).children().attr("src").slice(-6, -4);
+		let key = $(this).find("[src!='resources/card_back.png']").attr('src').slice(-6, -4);
 
 		console.log('key: '+key);
 		$(this).data('color', cards_colors[key] );
-		console.log( index + ": " + $( this ).data('color') );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
+
 		console.log( index + ": " + $( this ).data('number') );
+		console.log( index + ": " + $( this ).data('color') );
 		console.log( index + ": " + $( this ).data('card') );
 	});
 }
@@ -149,6 +160,14 @@ function checkMove($from, $fromP, $to, $toP){
 		else return false;
 	}
 	else return true;
+}
+
+/**
+* Called when a card is double clicked. According to game settings, the card can be flipped 
+or not
+*/
+function doubleClickedCard() {
+	alert('double clicked!');
 }
 
 /**
