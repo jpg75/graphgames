@@ -106,6 +106,7 @@ function makeDraggable() {
 	// set cards flipped or not:
 	//
 	// Set card bindings to flip behavior:
+	$('.card').off('dblclick');
 	$('.card').dblclick(
 					function() {
 						console.log('flipping card: '+ $(this).data('card') )
