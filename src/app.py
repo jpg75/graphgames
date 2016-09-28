@@ -5,26 +5,29 @@ __author__ = 'Gian Paolo Jesi'
 from flask import Flask, render_template, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
-import json
+# import json
 from util.config import Configuration
+import datetime
 
 PORT = 5000
+SHOE_FILE = 'game422-small.txt'
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
 # the best option based on installed packages.
 async_mode = None
 
-SHOE_FILE = 'game422-small.txt'
-c = Configuration(config_file=SHOE_FILE)
-c.purgelines()
-hands = c.content
-# print hands
+users = dict()  # maps username -> session obj
+cfg = Configuration(config_file=SHOE_FILE)
+cfg.purgelines()
+hands = cfg.content
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'itsasecret!'
 socket_io = SocketIO(app, async_mode=async_mode)
+
 thread = None
+
 
 def background_thread():
     """Example of how to send server generated events to clients."""
@@ -35,6 +38,25 @@ def background_thread():
         socket_io.emit('my response',
                        {'data': 'Server generated event', 'count': count},
                        namespace='/test')
+
+
+class Session(object):
+    ID_BASE = 0
+
+    def __init__(self, username, room=None):
+        self.id += Session.ID_BASE
+        self.username = username
+        self.ts0 = datetime.datetime.now()
+        self.room = room
+
+
+class TTTSession(Session):
+    def __init__(self, username, room=None, shoe_file='game422-small.txt'):
+        super(TTTSession, self).__init__(username, room)
+
+        cfg = Configuration(config_file=shoe_file)
+        cfg.purgelines()
+        self.hands = cfg.content
 
 
 @app.route('/')
@@ -77,69 +99,6 @@ def move(message):
     store(message['username'], message['move'], message['ts'])
 
 
-@socket_io.on('my event', namespace='/test')
-def test_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': message['data'], 'count': session['receive_count']})
-
-
-@socket_io.on('my broadcast event', namespace='/test')
-def test_broadcast_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': message['data'], 'count': session['receive_count']},
-         broadcast=True)
-
-
-@socket_io.on('join', namespace='/test')
-def join(message):
-    join_room(message['room'])
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': 'In rooms: ' + ', '.join(rooms()),
-          'count': session['receive_count']})
-
-
-@socket_io.on('leave', namespace='/test')
-def leave(message):
-    leave_room(message['room'])
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': 'In rooms: ' + ', '.join(rooms()),
-          'count': session['receive_count']})
-
-
-@socket_io.on('close room', namespace='/test')
-def close(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response', {'data': 'Room ' + message['room'] + ' is closing.',
-                         'count': session['receive_count']},
-         room=message['room'])
-    close_room(message['room'])
-
-
-@socket_io.on('my room event', namespace='/test')
-def send_room_message(message):
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': message['data'], 'count': session['receive_count']},
-         room=message['room'])
-
-
-@socket_io.on('disconnect request', namespace='/test')
-def disconnect_request():
-    session['receive_count'] = session.get('receive_count', 0) + 1
-    emit('my response',
-         {'data': 'Disconnected!', 'count': session['receive_count']})
-    disconnect()
-
-
-@socket_io.on('my ping', namespace='/test')
-def ping_pong():
-    emit('my pong')
-
-
 @socket_io.on('connect')
 def test_connect():
     print "A client connected"
@@ -153,9 +112,8 @@ def test_disconnect():
 
 def store(user, move, time):
     print "Vaid move received from user: %s, move: %s, at time: %s " % (user, move, time)
-    pass
 
 
 if __name__ == '__main__':
-    print "Started Game Server at port:%d!" % PORT
+    print "Started Game Server at port: %d!" % PORT
     socket_io.run(app, port=PORT, debug=True)
