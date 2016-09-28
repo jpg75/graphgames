@@ -9,15 +9,15 @@ const allowed_moving_zones = ["U", "T", "C", "N"];
 let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
 
-let socket = null; 
-/* let socket = io.connect('http://' + document.domain + ':' + location.port);
+// let socket = null; 
+let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
-    //socket.emit('my event', {data: 'I\'m connected!'});
+    // socket.emit('my event', {data: 'I\'m connected!'});
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
 
 socket.on('hand', handleHand());
-*/
+
 
 $(document).ready(function () {
 	/* initial card positions:
@@ -220,10 +220,11 @@ function passMove(){
 function login() {
 	let id = Math.random();
 	username = window.prompt("Please, enter your username", 'User_'+String(id).slice(-5));
-
+	console.log('Username: '+username);
+	
 	if (username == null) username = 'User_'+String(id).slice(-5);
 
-	// socket.emit('login', {'username': username});
+	socket.emit('login', {'username': username});
 }
 
 /**
@@ -232,6 +233,7 @@ function login() {
 function handleHand() {
 	;
 }
+
 // graph decompositions, Diestel
 // Rasetti
 // Knoblock
