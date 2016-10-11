@@ -105,7 +105,7 @@ function makeDraggable() {
 	$('#'+player+ '> .card').draggable('enable');
 	emphasizeActivePlayer();
 	setCoveredCards();
-	//eventuallyToggleOpponent();
+	eventuallyToggleOpponent();
 	initCardsData();
 	// set cards flipped or not:
 	//
@@ -205,13 +205,15 @@ function eventuallyToggleOpponent(){
 			cardObj.find('img').toggle();
 		
 	}
-	
+
 	if (player == 'CK' && opponent_covered){
 		let cardObj = $("#NK").children();
 		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
 		
 		console.log('viscard: '+viscard);
-		if (viscard =='none') 
+		if (viscard=='none' && opponent_covered)
+			cardObj.find('img').toggle();
+		else if (viscard=='inline' && !opponent_covered)
 			cardObj.find('img').toggle();
 		
 	}
