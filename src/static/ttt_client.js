@@ -8,6 +8,8 @@ const allowed_moving_zones = ["U", "T", "C", "N"];
 
 let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
+let covered = null;
+let opponent_covered = false;
 
 let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
@@ -86,8 +88,8 @@ $(document).ready(function () {
 enabled and emphasized.
 */
 function makeDraggable() {
-	let checkedValue = document.getElementById("limitDrag").checked;
-	console.log(checkedValue); 
+	console.log('player: '+ player);
+	console.log('opponent covered: '+ opponent_covered);
 
     $('.card').draggable({
     	disabled: true,
@@ -102,6 +104,8 @@ function makeDraggable() {
 	/* Enable the draggable(s) corresponding to the NK or CK cards*/
 	$('#'+player+ '> .card').draggable('enable');
 	emphasizeActivePlayer();
+	setCoveredCards();
+	//eventuallyToggleOpponent();
 	initCardsData();
 	// set cards flipped or not:
 	//
@@ -126,14 +130,14 @@ function initCardsData(){
 	$('.card').each(function(index, el) {
 		let key = $(this).find("[src!='static/card_back.png']").attr('src').slice(-6, -4);
 
-		console.log('key: '+key);
+		// console.log('key: '+key);
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
 
-		console.log( index + ": " + $( this ).data('number') );
+		/*console.log( index + ": " + $( this ).data('number') );
 		console.log( index + ": " + $( this ).data('color') );
-		console.log( index + ": " + $( this ).data('card') );
+		console.log( index + ": " + $( this ).data('card') );*/
 	});
 }
 
@@ -186,6 +190,55 @@ function invertPlayers($fromParent) {
 	}
 }
 
+/**
+* Cover the opponent card if the flag is set. The flag is set by the server at every 'hand' message.
+*/
+function eventuallyToggleOpponent(){
+	if (player == 'NK'){
+		let cardObj = $("#CK").children();
+		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
+			
+	    console.log('viscard: '+viscard);
+		if (viscard=='none' && opponent_covered)
+			cardObj.find('img').toggle();
+		else if (viscard=='inline' && !opponent_covered)
+			cardObj.find('img').toggle();
+		
+	}
+	
+	if (player == 'CK' && opponent_covered){
+		let cardObj = $("#NK").children();
+		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
+		
+		console.log('viscard: '+viscard);
+		if (viscard =='none') 
+			cardObj.find('img').toggle();
+		
+	}
+}
+
+
+/**
+* Set cards covered accrding to the server data sent at every hand change. 
+*/
+function setCoveredCards() {
+	if (covered !== null) {  
+		jQuery.each(covered, function(card, val) {
+			//console.log(card+' '+val);
+
+			if ( (card != 'GC') && (card != 'PL') ) { 
+				let cardObj = $("#" + card).children();
+			 	let visibility = cardObj.find("[src='static/card_back.png']").css('display');
+
+				if (visibility == 'none' && val) // uncovered amd must be covered
+					cardObj.find('img').toggle();
+				else if (visibility == 'inline' && !val) // covered and must be uncovered
+					cardObj.find('img').toggle(); 
+			}
+		});
+	}
+}
+
 /*******************************************************************
 * HTML interface functions
 */
@@ -201,7 +254,7 @@ function passMove(){
 	invertPlayers($('#'+player));
 	makeDraggable();
 
-	sendMove('P');
+	sendMove('P');	
 }
 
 /*******************************************************************
@@ -227,8 +280,11 @@ function login() {
 function handleHand(message) {
 	console.log(message);
 	let cards = message['hand'];
-	let covered = message['covered'];
+	
+	covered = message['covered'];
+	opponent_covered = message['opponent_covered'];
 
+	console.log('handlehand opponent_covered: '+opponent_covered);
 	console.log(cards);
 
 	jQuery.each(cards, function(i, val) {
@@ -243,25 +299,31 @@ function handleHand(message) {
 		else {
  			let cardObj = $("#" + i).children();
  			cardObj.find("[src!='static/card_back.png']").attr('src', 'static/'+val+'.png');
+			
 			if (covered[i]) cardObj.find('img').toggle();
 
 			cardObj.data('color', cards_colors[val] );
 			cardObj.data('number', val.charAt(0) );
 			cardObj.data('card', val );
 
+			setCoveredCards();
+			/*
 			console.log( i + ": " + cardObj.data('number') );
 			console.log( i + ": " + cardObj.data('color') );
 			console.log( i + ": " + cardObj.data('card') );
+			*/ 
 		}
 	});
+	
+	eventuallyToggleOpponent();
 }
+
 
 /**
 * Send a specific move to the server.
 */
 function sendMove(move){
 	let d = new Date();
-	// let ts = d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds();
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
 		d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds() });
 }
