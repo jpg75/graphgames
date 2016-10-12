@@ -11,6 +11,7 @@ import datetime
 
 PORT = 5000
 SHOE_FILE = 'game422-small.txt'
+SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 # Set this variable to "threading", "eventlet" or "gevent" to test the
 # different async modes, or leave it set to None for the application to choose
@@ -44,10 +45,11 @@ class Session(object):
     ID_BASE = 0
 
     def __init__(self, username, room=None):
-        self.id += Session.ID_BASE
+        self.id = Session.ID_BASE
         self.username = username
         self.ts0 = datetime.datetime.now()
         self.room = room
+        Session.ID_BASE += 1
 
 
 class TTTSession(Session):
@@ -57,6 +59,9 @@ class TTTSession(Session):
         cfg = Configuration(config_file=shoe_file)
         cfg.purgelines()
         self.hands = cfg.content
+        self.goal_card = self.hands[0]
+        self.goal_card = self.goal_card.split()
+        self.goal_card = self.goal_card[6]
 
 
 @app.route('/')
@@ -74,19 +79,30 @@ def login(message):
     When a client login. It replies with a 'game response' message holding everything required
     to start the game:
     + status: failure/success
-    + hand: where in card must be located, which is the goal card, whose player turn is
+    + hand: where the card must be located, which is the goal card, whose player turn is
     + covered cards: which card must be covered
+    + opponent_covered: whether the current player opponent must be covered or not
 
     :param message: json message with proposed username. No real auth.
     :return:
     """
+    global users
+
     print "User: %s logged in" % message['username']
+    users[message['username']] = TTTSession(message['username'])
+    content = users[message['username']].hands.pop(0)
+    content = content.upper()
+    # print content
+    content = content.split()
+    # print content
+    hand = dict(zip(SHOE_FILE_ORDER, content))
+    # print hand
     # generate a DB entry for username if not in use
 
-    emit('hand', {'success': 'ok', 'hand': {'NK': '3C', 'N': '4H', 'U': '2H', 'C': '3H',
-                                            'CK': '2C', 'T': '4C', 'GC': '2H', 'PL': 'CK'},
-                  'covered': {'NK': True, 'N': True, 'U': False, 'C': True,
-                              'CK': False, 'T': False}})
+    emit('hand', {'success': 'ok', 'hand': hand,
+                  'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                              'CK': False, 'T': False},
+                  'opponent_covered': True})
 
 
 @socket_io.on('move')
@@ -96,7 +112,9 @@ def move(message):
     :param message:
     :return:
     """
-    store(message['username'], message['move'], message['ts'])
+    store(message['username'], message['move'], message['ts'], message['moved_card'])
+    if message['move'] == 'T' and message['moved_card'] == users[message['username']].goal_card:
+        serve_new_hand(message['username'])
 
 
 @socket_io.on('connect')
@@ -110,10 +128,29 @@ def test_disconnect():
     print('Client disconnected', request.sid)
 
 
-def store(user, move, time):
-    print "Vaid move received from user: %s, move: %s, at time: %s " % (user, move, time)
+def store(user, move, time, moved_card):
+    print "Vaid move received from user: %s, move: %s, at time: %s, moved_card: %s " % (user, move,
+                                                                                        time,
+                                                                                        moved_card)
+
+
+def serve_new_hand(username):
+    s = users[username]
+    if len(s.hands) > 0:
+        content = s.hands.pop(0)
+        content = content.upper()
+        content = content.split()
+        s.goal_card = content[6]
+        hand = dict(zip(SHOE_FILE_ORDER, content))
+        print "Serving new HAND: %s" % hand
+        emit('hand', {'success': 'ok', 'hand': hand,
+                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                                  'CK': False, 'T': False},
+                      'opponent_covered': True})
 
 
 if __name__ == '__main__':
     print "Started Game Server at port: %d!" % PORT
     socket_io.run(app, port=PORT, debug=True)
+
+# Lidia De Giovanni

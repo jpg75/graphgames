@@ -1,0 +1,4 @@
+# NK    N    UP   C    CK   T	GC	PL
+   3C   4H   2H   3H   2C   4C	2H	ck
+   3H   2H   4H   3C   2C   4C	2C	nk
+   4H   4C   2C   2H   3H   3C  4H  ck
