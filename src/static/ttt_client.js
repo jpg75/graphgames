@@ -1,3 +1,7 @@
+/* 
+* NOTE: Try to use Knockout.js! 
+*/
+
 const cards_colors = {"2H": "red", "3H": "red", "4H": "red",
                     "2C": "black", "3C": "black", "4C": "black"};
 const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
@@ -5,6 +9,10 @@ const cards_figs = {"2H": "2H.png", "3H": "3H.png", "4H": "4H.png",
 const covered_cards = {"U": false, "C": true, "N": true, 
 						"T": false, "CK": false, "NK": false};
 const allowed_moving_zones = ["U", "T", "C", "N"];
+
+let card_layout = { 'changed': false, 
+					'state' : {'NK': '2C', 'N': '3C', 'U': '4C', 'C': '2H', 'CK': '3H', 'T': '4H', 
+							   'GC': '2H', 'PL': 'CK'} };
 
 let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
@@ -42,6 +50,7 @@ $(document).ready(function () {
 
 			legal_move = checkMove($from, $fromParent, $to, $toParent);
 			console.log("Is legal: "+ legal_move);
+			let moved_card = $from.data('card');
 			
 			if (!legal_move) {
 				// restore the moved card to its previous position:
@@ -66,10 +75,11 @@ $(document).ready(function () {
         	    	$toParent.html($from.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             		$fromParent.html($to.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             		makeDraggable();
+            		console.log('animation ended!');
           		});
 
           		score++;
-				sendMove($toParent.attr('id'));  // current valid move 
+				sendMove($toParent.attr('id'), moved_card);  // current valid move 
           	}
 	    }
 	});
@@ -107,8 +117,7 @@ function makeDraggable() {
 	setCoveredCards();
 	eventuallyToggleOpponent();
 	initCardsData();
-	// set cards flipped or not:
-	//
+
 	// Set card bindings to flip behavior:
 	$('.card').off('dblclick');
 	$('.card').dblclick(
@@ -116,7 +125,6 @@ function makeDraggable() {
 						console.log('flipping card: '+ $(this).data('card') )
 						$(this).find('img').toggle();
 					} );
-	
 }
 
 /*******************************************************************
@@ -130,7 +138,6 @@ function initCardsData(){
 	$('.card').each(function(index, el) {
 		let key = $(this).find("[src!='static/card_back.png']").attr('src').slice(-6, -4);
 
-		// console.log('key: '+key);
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
@@ -199,11 +206,10 @@ function eventuallyToggleOpponent(){
 		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
 			
 	    console.log('viscard: '+viscard);
-		if (viscard=='none' && opponent_covered)
+		if (viscard == 'none' && opponent_covered)
 			cardObj.find('img').toggle();
-		else if (viscard=='inline' && !opponent_covered)
+		else if (viscard == 'inline' && !opponent_covered)
 			cardObj.find('img').toggle();
-		
 	}
 
 	if (player == 'CK' && opponent_covered){
@@ -211,11 +217,10 @@ function eventuallyToggleOpponent(){
 		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
 		
 		console.log('viscard: '+viscard);
-		if (viscard=='none' && opponent_covered)
+		if (viscard == 'none' && opponent_covered)
 			cardObj.find('img').toggle();
-		else if (viscard=='inline' && !opponent_covered)
+		else if (viscard == 'inline' && !opponent_covered)
 			cardObj.find('img').toggle();
-		
 	}
 }
 
@@ -256,7 +261,7 @@ function passMove(){
 	invertPlayers($('#'+player));
 	makeDraggable();
 
-	sendMove('P');	
+	sendMove('P', '');	
 }
 
 /*******************************************************************
@@ -280,14 +285,19 @@ function login() {
 * NOTE: replicated code as in initCardsData() : solve it !
 */
 function handleHand(message) {
-	console.log(message);
+	console.log('Received HAND: '+ message);
+
 	let cards = message['hand'];
 	
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
 
-	console.log('handlehand opponent_covered: '+opponent_covered);
+	console.log('handlehand opponent_covered: '+ opponent_covered);
 	console.log(cards);
+
+	window.alert("New hand");
+	// $( ".cardSlot" ).stop();
+	// makeDraggable();
 
 	jQuery.each(cards, function(i, val) {
 		console.log(i+' '+val);
@@ -324,10 +334,11 @@ function handleHand(message) {
 /**
 * Send a specific move to the server.
 */
-function sendMove(move){
+function sendMove(move, moved_card){
 	let d = new Date();
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
-		d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds() });
+		d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds(), 
+		'moved_card': moved_card});
 }
 
 // graph decompositions, Diestel
