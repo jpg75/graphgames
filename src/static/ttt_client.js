@@ -154,7 +154,7 @@ function initCardsData(){
 function checkMove($from, $fromP, $to, $toP){
 	let dest_slot = $toP.attr('id');
 	console.log('id of destination: '+dest_slot);
-
+ 
 	let index = allowed_moving_zones.lastIndexOf(dest_slot);
 	if (index == -1) return false;
 
@@ -296,9 +296,8 @@ function handleHand(message) {
 	console.log(cards);
 
 	window.alert("New hand");
-	// $( ".cardSlot" ).stop();
-	// makeDraggable();
-
+	$.fx.off = true; // disable ALL animations
+ 			
 	jQuery.each(cards, function(i, val) {
 		console.log(i+' '+val);
 
@@ -309,7 +308,7 @@ function handleHand(message) {
 			player = val;
 		}
 		else {
- 			let cardObj = $("#" + i).children();
+ 			let cardObj = $("#" + i).children(); 			
  			cardObj.find("[src!='static/card_back.png']").attr('src', 'static/'+val+'.png');
 			
 			if (covered[i]) cardObj.find('img').toggle();
