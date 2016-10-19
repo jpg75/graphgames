@@ -340,7 +340,8 @@ function handleHand(message) {
 function sendMove(move, moved_card){
 	let d = new Date();
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
-		d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds(), 
+		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
+		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
 		'moved_card': moved_card});
 }
 
