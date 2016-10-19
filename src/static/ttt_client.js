@@ -26,6 +26,9 @@ socket.on('connect', function() {
 });
 
 socket.on('hand', handleHand);
+socket.on('gameover', function(){
+	window.alert('Session ended, Game Over.');
+});
 
 
 $(document).ready(function () {
@@ -327,6 +330,7 @@ function handleHand(message) {
 	});
 	
 	eventuallyToggleOpponent();
+	// $.fx.off = false; // enable ALL animations
 }
 
 
