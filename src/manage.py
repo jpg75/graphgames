@@ -17,5 +17,16 @@ def make_shell_context():
 manager.add_command("shell", Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 
+
+@manager.command
+def populate():
+    """
+    Insert Users, Roles or whatever it is required for the application.
+    Please consider the security implications that might arise!
+    :return:
+    """
+    db.session.add(User(email='gp.jesi@gmail.com', username='gp.jesi', password='pippo'))
+
+
 if __name__ == '__main__':
     manager.run()

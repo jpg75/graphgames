@@ -93,3 +93,5 @@ class SessionType(db.Model):
 
     def __repr__(self):
         return 'Session: %r' % self.info
+
+
