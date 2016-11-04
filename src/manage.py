@@ -25,8 +25,8 @@ def populate():
     Please consider the security implications that might arise!
     :return:
     """
-    db.session.add(User(email='gp.jesi@gmail.com', username='gp.jesi', password='pippo'))
-
+    User.inject_users()
+    Role.inject_roles()
 
 if __name__ == '__main__':
     manager.run()

@@ -14,9 +14,23 @@ class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=True, index=true)
 
     def __repr__(self):
         return '<Role %r>' % self.name
+
+    @staticmethod
+    def inject_roles():
+        roles = {'User': True,
+                 'Administrator': False}
+
+        for r in roles:
+            role = Role.query.filter_by(name=r).first()
+            if role is None:
+                role = Role(name=r)
+            role.default = roles[r]
+            db.session.add(role)
+        db.session.commit()
 
 
 class User(UserMixin, db.Model):
@@ -47,7 +61,7 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id})
 
-    def confim(self, token):
+    def confirm(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
@@ -58,6 +72,17 @@ class User(UserMixin, db.Model):
         self.confirmed = True
         db.session.add(self)
         return True
+
+    @staticmethod
+    def inject_users():
+        users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo')}
+
+        for u in users:
+            user = User.query.filter_by(email=u).first()
+            if user is None:
+                user = User(email=u, username=users[u][0], password=users[u][1])
+            db.session.add(user)
+        db.session.commit()
 
 
 class Move(db.Model):
@@ -93,5 +118,3 @@ class SessionType(db.Model):
 
     def __repr__(self):
         return 'Session: %r' % self.info
-
-
