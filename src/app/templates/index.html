@@ -6,14 +6,26 @@
 
 {% block page_content %}
 <div class="page-header">
-<h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
-{% if not known %}
-<h1><p>Happy to meet you.</p>
-<p>Please login/register to play our game(s).</p></h1>
-{% else %}
-<p>Happy to see you again!</p>
-{% endif %}
+    <h1>Hello {% if current_user.is_authenticated %}{{ current_user.username
+        }}, welcome back!</h1>
+
+    <h1><p>Please, choose a game:</p>
+        <ul>
+            {% for game in games %}
+            <li><a href="{{ url_for('.'+game) }}">{{ game }}</a></li>
+            {% endfor %}
+        </ul>
+    </h1>
+    {% else %} Stranger !
+    </h1>
+    <h1>
+        <p>Please login/register to play our game(s).</p>
+        <p><a href="{{ url_for('auth.login') }}">Log In</a></p>
+    </h1>
+    {% endif %}
+
 </div>
 
-{{ wtf.quick_form(form) }}
+
+<!--{{ wtf.quick_form(form) }} -->
 {% endblock %}
