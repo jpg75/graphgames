@@ -153,7 +153,7 @@ class User(UserMixin, db.Model):
             user = User.query.filter_by(email=u).first()
             if user is None:
                 user = User(email=u, username=users[u][0], password=users[u][1])
-            db.session.add(user)
+                db.session.add(user)
         db.session.commit()
 
 
@@ -195,6 +195,22 @@ class SessionType(db.Model):
 
     def __repr__(self):
         return 'Session: %r' % self.info
+
+    @staticmethod
+    def inject_session_types():
+        # maps description -> tuple
+        # the tuple has just a description of the configuration as a python object (dictionary)
+        types = {'Small TTT Solo': ({'shoe_file': 'game422-small.txt', 'opponent_covered': True,
+                                     'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                                                 'CK': False, 'T': False}})}
+
+        for t in types:
+            st = SessionType.query.filter_by(info=t).first()
+            if st is None:
+                st = SessionType(params=types[t][0], info=t)
+                db.session.add(st)
+
+        db.session.commit()
 
 
 class GameSession(object):

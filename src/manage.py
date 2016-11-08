@@ -2,7 +2,7 @@
 
 import os
 from app import create_app, db, socket_io
-from app.models import User, Role, Move
+from app.models import User, Role, Move, SessionType
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
@@ -34,6 +34,7 @@ def populate():
     """
     Role.inject_roles()
     User.inject_users()
+    SessionType.inject_session_types()
 
 
 if __name__ == '__main__':
