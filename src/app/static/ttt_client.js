@@ -143,12 +143,9 @@ function initCardsData(){
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
-
-		/*console.log( index + ": " + $( this ).data('number') );
-		console.log( index + ": " + $( this ).data('color') );
-		console.log( index + ": " + $( this ).data('card') );*/
 	});
 }
+
 
 /**
 * Check if a move is legal or not.
@@ -274,12 +271,12 @@ function passMove(){
 * Log into the server. Initialize the connection.
 */
 function login() {
-	let id = Math.random();
-	username = window.prompt("Please, enter your username", 'User_'+String(id).slice(-5));
+	// let id = Math.random();
+	// username = window.prompt("Please, enter your username", 'User_'+String(id).slice(-5));
 
-	if (username == null) username = 'User_'+String(id).slice(-5);
-	console.log('Username: '+username);
-	socket.emit('login', {'username': username});
+	// if (username == null) username = 'User_'+String(id).slice(-5);
+	// console.log('Username: '+username);
+	socket.emit('login', {'username': ''});
 }
 
 /**
