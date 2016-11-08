@@ -1,15 +1,17 @@
 from . import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin, AnonymousUserMixin
+from flask_login import UserMixin, AnonymousUserMixin, current_user
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request
 from datetime import datetime
 from . import db, socket_io
 # from configuration import Configuration
-from flask_socketio import SocketIO, emit
+from flask_socketio import emit
 from os.path import join, dirname, abspath, sep
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+user_d = dict()  # maps user names to Session objects
 
 
 @login_manager.user_loader
@@ -174,8 +176,8 @@ class Move(db.Model):
 class Session(db.Model):
     __tableName__ = 'sessions'
     id = db.Column(db.Integer, primary_key=True)
-    uid = db.Column(db.Integer)
-    type = db.Column(db.String)
+    uid = db.Column(db.Integer, db.ForeignKey('users.id'))
+    type = db.Column(db.Integer, db.ForeignKey('session_types.id'))
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
 
@@ -194,18 +196,18 @@ class SessionType(db.Model):
         return 'Session: %r' % self.info
 
 
-class Session(object):
+class GameSession(object):
     def __init__(self, sid, uid, username, room=None):
         self.sid = sid
         self.uid = uid
         self.type = 1
         self.username = username
-        self.ts_start = datetime.datetime.now()
+        self.ts_start = datetime.now()
         self.ts_end = None
         self.room = room
 
 
-class TTTSession(Session):
+class TTTSession(GameSession):
     def __init__(self, sid, uid, username, room=None,
                  shoe_file='game422-small.txt'):
         super(TTTSession, self).__init__(sid, uid, username, room)
@@ -221,7 +223,9 @@ class TTTSession(Session):
 @socket_io.on('login')
 def login(message):
     """
-    When a client login. It replies with a 'game response' message holding everything required
+    The actual login is carried out by the web app through flask_login.
+    Here the login represents a sort of confirmation.
+    It replies with a 'game response' message holding everything required
     to start the game:
     + status: failure/success
     + hand: where the card must be located, which is the goal card, whose player turn is
@@ -231,23 +235,30 @@ def login(message):
     :param message: json message with proposed username. No real auth.
     :return:
     """
-    # global users, current_uid, current_sid
-    current_sid = current_uid = 1
-    # print "User: %s logged in" % message['username']
-    current_uid += 1
-    # inject_user(db_conn, uid=current_uid, username=message['username'])
+    if not current_user.is_authenticated:
+        return
 
-    current_sid += 1
-    # users[message['username']] = TTTSession(current_sid, current_uid, message['username'])
-    # inject_session(db_conn, users[message['username']])
+    print current_user
+    # current_sid = current_uid = 1
+    # current_uid += 1
 
-    # content = users[message['username']].hands.pop(0)
-    content = ''
-    content = content.upper()
-    # print content
-    content = content.split()
-    # print content
-    hand = dict(zip(SHOE_FILE_ORDER, content))
+    # current_sid += 1
+    # user_d[current_user.username] = TTTSession(current_user.id, current_uid,
+    #                                           current_user.username)
+    s = Session(uid=current_user.id, type=1, start=datetime.now())
+    db.session.add(s)
+    db.session.commit()
+
+    # TODO: get the shoe_file from the context!
+    user_d[current_user.username] = Configuration(config_file='game422-small.txt')
+    user_d[current_user.username].purgelines()
+
+    hand = user_d[current_user.username].content.pop(0)
+    hand = hand.upper()
+    # print hand
+    hand = hand.split()
+    # print hand
+    hand = dict(zip(SHOE_FILE_ORDER, hand))
     # print hand
 
     emit('hand', {'success': 'ok', 'hand': hand,
@@ -276,7 +287,10 @@ def move(message):
 @socket_io.on('connect')
 def test_connect():
     print "A client connected"
-    # emit('my response', {'data': 'Connected', 'count': 0})
+    # if current_user.is_authenticated():
+    #    print "A client connected"
+    # else:
+    #    return False
 
 
 @socket_io.on('disconnect')
@@ -284,22 +298,15 @@ def test_disconnect():
     print('Client disconnected', request.sid)
 
 
-def store(user, move, time, moved_card):
-    print "Valid move received from user: %s, move: %s, at time: %s, moved_card: %s " % (user, move,
-                                                                                         time,
-                                                                                         moved_card)
-    # s = users[user]
-    # inject_move(db_conn, s.uid, s.sid, move, time)
-
-
 def serve_new_hand(username):
-    s = users[username]
-    if len(s.hands) > 0:
-        content = s.hands.pop(0)
-        content = content.upper()
-        content = content.split()
-        s.goal_card = content[6]
-        hand = dict(zip(SHOE_FILE_ORDER, content))
+    # s = users[username]
+    s = user_d[current_user.username]
+    if len(s.content) > 0:
+        hand = s.content.pop(0)
+        hand = hand.upper()
+        hand = hand.split()
+        # s.goal_card = hand[6]
+        hand = dict(zip(SHOE_FILE_ORDER, hand))
         print "Serving new HAND: %s" % hand
         emit('hand', {'success': 'ok', 'hand': hand,
                       'covered': {'NK': False, 'N': True, 'U': False, 'C': True,

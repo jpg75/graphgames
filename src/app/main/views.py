@@ -4,6 +4,7 @@ from . import main
 from .forms import NameForm
 from .. import db
 from ..models import User
+from ..decorators import authenticated_only
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -31,5 +32,6 @@ def index():
 
 
 @main.route('/ttt')
+@authenticated_only
 def ttt():
     return render_template("ttt-page.html")
