@@ -7,6 +7,7 @@ from datetime import datetime
 from . import db, socket_io
 # from configuration import Configuration
 from flask_socketio import emit
+from decorators import authenticated_only
 from os.path import join, dirname, abspath, sep
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
@@ -221,6 +222,7 @@ class TTTSession(GameSession):
 
 
 @socket_io.on('login')
+@authenticated_only
 def login(message):
     """
     The actual login is carried out by the web app through flask_login.
@@ -268,6 +270,7 @@ def login(message):
 
 
 @socket_io.on('move')
+@authenticated_only
 def move(message):
     """
     When receiving a move from the client.
@@ -285,6 +288,7 @@ def move(message):
 
 
 @socket_io.on('connect')
+@authenticated_only
 def test_connect():
     print "A client connected"
     # if current_user.is_authenticated():
