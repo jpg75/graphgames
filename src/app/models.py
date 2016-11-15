@@ -1,11 +1,9 @@
-from . import db, login_manager
+from . import db, socket_io, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin, current_user
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request
 from datetime import datetime
-from . import db, socket_io
-# from configuration import Configuration
 from flask_socketio import emit
 from decorators import authenticated_only
 from os.path import join, dirname, abspath, sep
