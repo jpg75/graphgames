@@ -2,7 +2,7 @@ from . import db, socket_io, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin, AnonymousUserMixin, current_user
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
-from flask import current_app, request
+from flask import current_app, request, session
 from datetime import datetime
 from flask_socketio import emit
 from decorators import authenticated_only
@@ -211,28 +211,28 @@ class SessionType(db.Model):
         db.session.commit()
 
 
-class GameSession(object):
-    def __init__(self, sid, uid, username, room=None):
-        self.sid = sid
-        self.uid = uid
-        self.type = 1
-        self.username = username
-        self.ts_start = datetime.now()
-        self.ts_end = None
-        self.room = room
-
-
-class TTTSession(GameSession):
-    def __init__(self, sid, uid, username, room=None,
-                 shoe_file='game422-small.txt'):
-        super(TTTSession, self).__init__(sid, uid, username, room)
-
-        cfg = Configuration(config_file=shoe_file)
-        cfg.purgelines()
-        self.hands = cfg.content
-        self.goal_card = self.hands[0]
-        self.goal_card = self.goal_card.split()
-        self.goal_card = self.goal_card[6]
+# class GameSession(object):
+#     def __init__(self, sid, uid, username, room=None):
+#         self.sid = sid
+#         self.uid = uid
+#         self.type = 1
+#         self.username = username
+#         self.ts_start = datetime.now()
+#         self.ts_end = None
+#         self.room = room
+#
+#
+# class TTTSession(GameSession):
+#     def __init__(self, sid, uid, username, room=None,
+#                  shoe_file='game422-small.txt'):
+#         super(TTTSession, self).__init__(sid, uid, username, room)
+#
+#         cfg = Configuration(config_file=shoe_file)
+#         cfg.purgelines()
+#         self.hands = cfg.content
+#         self.goal_card = self.hands[0]
+#         self.goal_card = self.goal_card.split()
+#         self.goal_card = self.goal_card[6]
 
 
 @socket_io.on('login')
@@ -255,18 +255,11 @@ def login(message):
         return
 
     print current_user
-    # current_sid = current_uid = 1
-    # current_uid += 1
-
-    # current_sid += 1
-    # user_d[current_user.username] = TTTSession(current_user.id, current_uid,
-    #                                           current_user.username)
-    s = Session(uid=current_user.id, type=1, start=datetime.now())
-    db.session.add(s)
-    db.session.commit()
+    print session['game_cfg']
+    print session['game_type']
 
     # TODO: get the shoe_file from the context!
-    user_d[current_user.username] = Configuration(config_file='game422-small.txt')
+    user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
     user_d[current_user.username].purgelines()
 
     hand = user_d[current_user.username].content.pop(0)
@@ -277,10 +270,14 @@ def login(message):
     hand = dict(zip(SHOE_FILE_ORDER, hand))
     # print hand
 
+    # emit('hand', {'success': 'ok', 'hand': hand,
+    #               'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+    #                           'CK': False, 'T': False},
+    #               'opponent_covered': True})
+
     emit('hand', {'success': 'ok', 'hand': hand,
-                  'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-                              'CK': False, 'T': False},
-                  'opponent_covered': True})
+                  'covered': session['game_cfg']['covered'],
+                  'opponent_covered': session['game_cfg']['opponent_covered']})
 
 
 @socket_io.on('move')
@@ -292,9 +289,14 @@ def move(message):
     :return:
     """
     print "received move: ", message['move']
-    u = User.query.filter_by(username=message['username']).first()
+    # u = User.query.filter_by(username=message['username']).first()
+    print current_user
+    print current_user.id
+    # u = User.query.filter_by(username=current_user.id).first()
+    print current_user.username
+    print current_user.email
     # It actually generates the timestamp now!
-    m = Move(uid=u.id, mv=message['move'], ts=datetime.now())
+    m = Move(uid=current_user.id, mv=message['move'], ts=datetime.now())
     db.session.add(m)
     db.session.commit()
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
@@ -312,7 +314,9 @@ def test_connect():
 
 
 @socket_io.on('disconnect')
+@authenticated_only
 def test_disconnect():
+    user_d.pop(current_user.username, None)  # removed from the current playing users
     print('Client disconnected', request.sid)
 
 
@@ -327,9 +331,12 @@ def serve_new_hand(username):
         hand = dict(zip(SHOE_FILE_ORDER, hand))
         print "Serving new HAND: %s" % hand
         emit('hand', {'success': 'ok', 'hand': hand,
-                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-                                  'CK': False, 'T': False},
-                      'opponent_covered': True})
+                      'covered': session['game_cfg']['covered'],
+                      'opponent_covered': session['game_cfg']['opponent_covered']})
+
+        # 'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+        #             'CK': False, 'T': False},
+        # 'opponent_covered': True})
 
     else:  # gamedef make_shell_context():
         print "session ended"

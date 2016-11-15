@@ -2,7 +2,7 @@
 
 import os
 from app import create_app, db, socket_io
-from app.models import User, Role, Move, SessionType
+from app.models import User, Role, Move, Session, SessionType
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
@@ -13,7 +13,8 @@ migrate = Migrate(app, db)
 
 
 def make_shell_context():
-    return dict(app=app, db=db, User=User, Role=Role, Move=Move, SessionType=SessionType)
+    return dict(app=app, db=db, User=User, Role=Role, Move=Move,
+                Session=Session, SessionType=SessionType)
 
 
 manager.add_command("shell", Shell(make_context=make_shell_context))

@@ -338,7 +338,7 @@ function sendMove(move, moved_card){
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
 		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
 		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
-		'moved_card': moved_card});
+		'moved_card': moved_card, 'goal_card': goalCard});
 }
 
 // graph decompositions, Diestel
