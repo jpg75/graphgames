@@ -172,8 +172,8 @@ class Move(db.Model):
         return '<Move %r made by user %r at %r>' % (self.mv, self.uid, self.ts)
 
 
-class Session(db.Model):
-    __tableName__ = 'sessions'
+class GameSession(db.Model):
+    __tableName__ = 'game_sessions'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
     type = db.Column(db.Integer, db.ForeignKey('session_types.id'))
@@ -185,8 +185,8 @@ class Session(db.Model):
                                                                self.end)
 
 
-class SessionType(db.Model):
-    __tablename__ = 'session_types'
+class GameType(db.Model):
+    __tablename__ = 'game_types'
     id = db.Column(db.Integer, primary_key=True)
     params = db.Column(db.Text)
     info = db.Column(db.Text)
@@ -200,39 +200,21 @@ class SessionType(db.Model):
         # the tuple has just a description of the configuration as a python object (dictionary)
         types = {'Small TTT Solo': ({'shoe_file': 'game422-small.txt', 'opponent_covered': True,
                                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-                                                 'CK': False, 'T': False}})}
+                                                 'CK': False, 'T': False}}),
+                 'Small TTT Solo Uncovered': ({'shoe_file': 'game422-small.txt',
+                                               'opponent_covered': False,
+                                               'covered': {'NK': False, 'N': True, 'U': False,
+                                                           'C': True,
+                                                           'CK': False, 'T': False}})
+                 }
 
         for t in types:
-            st = SessionType.query.filter_by(info=t).first()
+            st = GameType.query.filter_by(info=t).first()
             if st is None:
-                st = SessionType(params=types[t][0], info=t)
+                st = GameType(params=types[t][0], info=t)
                 db.session.add(st)
 
         db.session.commit()
-
-
-# class GameSession(object):
-#     def __init__(self, sid, uid, username, room=None):
-#         self.sid = sid
-#         self.uid = uid
-#         self.type = 1
-#         self.username = username
-#         self.ts_start = datetime.now()
-#         self.ts_end = None
-#         self.room = room
-#
-#
-# class TTTSession(GameSession):
-#     def __init__(self, sid, uid, username, room=None,
-#                  shoe_file='game422-small.txt'):
-#         super(TTTSession, self).__init__(sid, uid, username, room)
-#
-#         cfg = Configuration(config_file=shoe_file)
-#         cfg.purgelines()
-#         self.hands = cfg.content
-#         self.goal_card = self.hands[0]
-#         self.goal_card = self.goal_card.split()
-#         self.goal_card = self.goal_card[6]
 
 
 @socket_io.on('login')
@@ -270,11 +252,6 @@ def login(message):
     hand = dict(zip(SHOE_FILE_ORDER, hand))
     # print hand
 
-    # emit('hand', {'success': 'ok', 'hand': hand,
-    #               'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-    #                           'CK': False, 'T': False},
-    #               'opponent_covered': True})
-
     emit('hand', {'success': 'ok', 'hand': hand,
                   'covered': session['game_cfg']['covered'],
                   'opponent_covered': session['game_cfg']['opponent_covered']})
@@ -296,7 +273,8 @@ def move(message):
     print current_user.username
     print current_user.email
     # It actually generates the timestamp now!
-    m = Move(uid=current_user.id, mv=message['move'], ts=datetime.now())
+    m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
+             ts=datetime.now())
     db.session.add(m)
     db.session.commit()
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
@@ -321,22 +299,16 @@ def test_disconnect():
 
 
 def serve_new_hand(username):
-    # s = users[username]
     s = user_d[current_user.username]
     if len(s.content) > 0:
         hand = s.content.pop(0)
         hand = hand.upper()
         hand = hand.split()
-        # s.goal_card = hand[6]
         hand = dict(zip(SHOE_FILE_ORDER, hand))
         print "Serving new HAND: %s" % hand
         emit('hand', {'success': 'ok', 'hand': hand,
                       'covered': session['game_cfg']['covered'],
                       'opponent_covered': session['game_cfg']['opponent_covered']})
-
-        # 'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-        #             'CK': False, 'T': False},
-        # 'opponent_covered': True})
 
     else:  # gamedef make_shell_context():
         print "session ended"

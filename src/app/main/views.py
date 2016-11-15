@@ -5,7 +5,7 @@ from flask_login import current_user
 from . import main
 from .forms import NameForm
 from .. import db
-from ..models import User, SessionType, Session
+from ..models import User, GameType, GameSession
 from ..decorators import authenticated_only
 from json import loads
 
@@ -13,7 +13,7 @@ from json import loads
 @main.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
-    avail_games = SessionType.query.all()
+    avail_games = GameType.query.all()
     avail_games = {x.id: x.info for x in avail_games}
 
     if form.validate_on_submit():
@@ -61,12 +61,12 @@ def show_game(game_id):
     :return:
     """
     # Generate a GameSession and add to the WSGI session
-    s = Session(uid=current_user.id, type=game_id, start=datetime.now())
+    s = GameSession(uid=current_user.id, type=game_id, start=datetime.now())
     db.session.add(s)
     db.session.commit()
     session['game_session'] = s.id
 
-    st = SessionType.query.filter_by(id=game_id).first()
+    st = GameType.query.filter_by(id=game_id).first()
     session['game_cfg'] = loads(st.params)  # the json from the DB is converted into python dict
     session['game_type'] = game_id
 

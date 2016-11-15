@@ -2,7 +2,7 @@
 
 import os
 from app import create_app, db, socket_io
-from app.models import User, Role, Move, Session, SessionType
+from app.models import User, Role, Move, GameSession, GameType
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
@@ -14,7 +14,7 @@ migrate = Migrate(app, db)
 
 def make_shell_context():
     return dict(app=app, db=db, User=User, Role=Role, Move=Move,
-                Session=Session, SessionType=SessionType)
+                Session=GameSession, SessionType=GameType)
 
 
 manager.add_command("shell", Shell(make_context=make_shell_context))
@@ -35,7 +35,7 @@ def populate():
     """
     Role.inject_roles()
     User.inject_users()
-    SessionType.inject_session_types()
+    GameType.inject_session_types()
 
 
 if __name__ == '__main__':
