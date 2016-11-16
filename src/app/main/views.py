@@ -1,7 +1,7 @@
 # from OpenSSL.SSL import Session
 from datetime import datetime
 from flask import render_template, session, redirect, url_for, flash
-from flask_login import current_user
+from flask_login import current_user, login_required
 from . import main
 from .forms import NameForm, BaseForm
 from .. import db
@@ -38,9 +38,9 @@ def index():
 
 
 @main.route('/admin', methods=['GET', 'POST'])
+@login_required
 def admin():
     users = User.query.all()
-
     for user in users:
         print user.username
         field = SelectField(user.username, choices=[(user.role.name, user.role.name),
@@ -52,18 +52,22 @@ def admin():
     BaseForm.append_field('Submit privilege change', SubmitField())
     form = BaseForm()
 
+    if not current_user.is_administrator():
+        flash('Cannot access to admin panel when not having administrative privileges.')
+        redirect(url_for('.index'))
+
     if form.validate_on_submit():
-        # check what to change and make query
         print form.data
         for user in form.data:
             if user.startswith('user_'):
-                id = int(user.replace('user_', ''))
-                users[id-1].role_id = Role.role_id_from_name(form.data[user])
-                db.session.add(users[id-1])
+                uid = int(user.replace('user_', ''))
+                users[uid-1].role_id = Role.role_id_from_name(form.data[user])
+                db.session.add(users[uid-1])
 
         db.session.commit()
-        flash('Privileges updated')
+        flash('Privileges updated.')
         return redirect(url_for('.index'))
+    
     else:
         return render_template('admin.html', form=form)
 
@@ -118,14 +122,3 @@ def show_game(game_id):
     # session, the js game client receives the json config.
     #
     # However, it is still to be solved the fact that
-
-    # def my_view():
-    #     class F(MyBaseForm):
-    #         pass
-    #
-    #     F.username = TextField('username')
-    #     for name in iterate_some_model_dynamically():
-    #         setattr(F, name, TextField(name.title()))
-    #
-    #     form = F(request.POST, ...)
-    #     # do view stuff
