@@ -266,10 +266,8 @@ def move(message):
     :return:
     """
     print "received move: ", message['move']
-    # u = User.query.filter_by(username=message['username']).first()
     print current_user
     print current_user.id
-    # u = User.query.filter_by(username=current_user.id).first()
     print current_user.username
     print current_user.email
     # It actually generates the timestamp now!
@@ -310,6 +308,11 @@ def serve_new_hand(username):
                       'covered': session['game_cfg']['covered'],
                       'opponent_covered': session['game_cfg']['opponent_covered']})
 
-    else:  # gamedef make_shell_context():
+    else:
         print "session ended"
+        # ends the session on the DB:
+        gs = GameSession.query.filter_by(id=session['game_session']).first()
+        gs.end = datetime.now()
+        db.session.add(gs)
+        db.session.commit()
         emit('gameover', {})
