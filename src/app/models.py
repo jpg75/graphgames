@@ -124,7 +124,7 @@ class User(UserMixin, db.Model):
         return '<User %r>' % self.username
 
     def is_administrator(self):
-        return True if self.role == 'Administrator' else False
+        return True if self.role.name == 'Administrator' else False
 
     @property
     def password(self):
