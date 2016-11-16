@@ -7,3 +7,11 @@ class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[data_required()])
     password = PasswordField('Password', validators=[data_required()])
     submit = SubmitField('Submit')
+
+
+class BaseForm(FlaskForm):
+    @classmethod
+    def append_field(cls, name, field):
+        setattr(cls, name, field)
+        return cls
+

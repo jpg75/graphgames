@@ -91,6 +91,17 @@ class Role(db.Model):
             db.session.add(role)
         db.session.commit()
 
+    @staticmethod
+    def opposite_role(role):
+        if role == 'Administrator':
+            return u'User'
+        else:
+            return u'Administrator'
+
+    @staticmethod
+    def role_id_from_name(name):
+        return 1 if name == 'Administrator' else 2
+
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
@@ -144,14 +155,15 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def inject_users():
-        users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo'),
-                 'admin@graphgames.org': ('admin', 'adminpw')
+        users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo', 'User'),
+                 'admin@graphgames.org': ('admin', 'adminpw', 'Administrator')
                  }
 
         for u in users:
             user = User.query.filter_by(email=u).first()
             if user is None:
-                user = User(email=u, username=users[u][0], password=users[u][1])
+                role = 1 if (users[u][2] == 'Administrator') else 2
+                user = User(email=u, username=users[u][0], password=users[u][1], role_id=role)
                 db.session.add(user)
         db.session.commit()
 
