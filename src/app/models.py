@@ -7,6 +7,7 @@ from datetime import datetime
 from flask_socketio import emit
 from decorators import authenticated_only
 from os.path import join, dirname, abspath, sep
+from json import dumps
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
@@ -176,7 +177,7 @@ class GameSession(db.Model):
     __tableName__ = 'game_sessions'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
-    type = db.Column(db.Integer, db.ForeignKey('session_types.id'))
+    type = db.Column(db.Integer, db.ForeignKey('game_types.id'))
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
 
@@ -195,7 +196,7 @@ class GameType(db.Model):
         return 'Session: %r' % self.info
 
     @staticmethod
-    def inject_session_types():
+    def inject_game_types():
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
         types = {'Small TTT Solo': ({'shoe_file': 'game422-small.txt', 'opponent_covered': True,
@@ -211,7 +212,8 @@ class GameType(db.Model):
         for t in types:
             st = GameType.query.filter_by(info=t).first()
             if st is None:
-                st = GameType(params=types[t][0], info=t)
+                # Careful: python dicts must be converted in json strings here!
+                st = GameType(params=dumps(types[t]), info=t)
                 db.session.add(st)
 
         db.session.commit()
