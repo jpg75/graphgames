@@ -155,8 +155,16 @@ def config_edit(conf_id):
 @main.route('/config_del/<int:conf_id>')
 @login_required
 def config_del(conf_id):
-    form = BaseForm()
-    return render_template('config_del.html', form=form, conf_id=conf_id)
+    gt = GameType.query.filter_by(id=conf_id).first()
+    if gt is not None:
+        db.session.delete(gt)
+        db.session.commit()
+        flash("Game configuration successully deleted.")
+
+    else:
+        flash("Warning: the selected configuration was no longer available in the system.")
+
+    return redirect(url_for('main.config'))
 
 
 @main.route('/<int:game_id>')
