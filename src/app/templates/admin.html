@@ -1,24 +1,20 @@
 {% extends "base.html" %}
 {% import "bootstrap/wtf.html" as wtf %}
 
-{% block title %}Graphgames - Admin{% endblock %}
+{% block title %}Graphgames - Main Admin Panel{% endblock %}
 
 {% block page_content %}
 <div class="page-header">
-    <h1>Admin</h1>
+    <h1>Main Admin Panel</h1>
 </div>
 <div>
     <h3><p>Change user's administrative privileges.</p>
-        <p>Standard users ('users') can just play games,
+        <p>Standard users ('Users') can just play games,
             while administrators ('Administrators') can do more:
             <ul>
-            <li>manage user privileges</li>
-            <li>create new game configuration</li>
-            <li>access data about any user session</li>
+            <li><a href="{{ url_for('main.config')}}">Manage game configurations</a></li>
+            <li><a href="{{ url_for('main.user_admin')}}">Manage user's privileges</a></li>
         </ul>
         </p></h3>
-</div>
-<div class="col-md-4">
-    {{wtf.quick_form(form) }}
 </div>
 {% endblock %}
