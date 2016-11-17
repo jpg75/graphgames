@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Graphgames - Admin Panel Game Config{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Admin Panel - Game Config</h1>
+</div>
+<div>
+    <h3>
+        <div><p>Games can be generated, modified or removed from the system.</p></div>
+        <div>
+            <p>
+                Currently available games in the system:
+            </p></div>
+    </h3>
+</div>
+<div>
+    <h3>
+        <div>
+            <a class="btn btn-success" href="{{ url_for('main.config_add')}}">Add</a>
+        </div>
+        <p>
+            {% if data==None %}
+            Sorry, currently no games are available in the system.
+            {% else %}
+        <table class="table table-hover table-sm table-striped" style="width:90%">
+            <tr>
+                <th>#ID</th>
+                <th>Info</th>
+                <th>Config parameters</th>
+                <th></th>
+            </tr>
+            {% for item in data %}
+            <tr>
+                <td>
+                    {{item.id}}
+                </td>
+                <td>
+                    {{item.info}}
+                </td>
+                <td>
+                    {{item.params}}
+                </td>
+                <td>
+                    <a class="btn btn-primary"
+                       href="{{ url_for('main.config_edit', conf_id=item.id)}}">Edit</a>
+                    <a class="btn btn-danger"
+                       href="{{ url_for('main.config_del', conf_id=item.id)}}">Del</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% endif %}
+        </p></h3>
+</div>
+
+{% endblock %}
+

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Graphgames - Admin Panel Edit Game Config{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Admin Panel - Edit Game Config</h1>
+</div>
+<div>
+    <h3>
+        <div><p>Editing Game Configuration #ID: {{conf_id}}</p>
+        </div>
+    </h3>
+</div>
+<div class="col-md-4">
+    {{wtf.quick_form(form) }}
+</div>
+{% endblock %}
