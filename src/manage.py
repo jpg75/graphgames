@@ -40,3 +40,9 @@ def populate():
 
 if __name__ == '__main__':
     manager.run()
+
+# NOTE: in order to regenerate the DB:
+# > db init
+# > db migrate -m "comment"
+# > db upgrade
+# > manage.py populate

@@ -126,6 +126,11 @@ class User(UserMixin, db.Model):
     def is_administrator(self):
         return True if self.role.name == 'Administrator' else False
 
+    def ping(self):
+        # self.last_seen= datetime.utcnow()
+        # db.session.add(self)
+        pass
+
     @property
     def password(self):
         raise AttributeError('password is not a readable attribute')
@@ -211,22 +216,22 @@ class GameType(db.Model):
     def inject_game_types():
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
-        types = {'Small TTT Solo': ({'shoe_file': 'game422-small.txt', 'opponent_covered': True,
+        types = {'Small TTT Solo': ({'html_file': 'ttt-page.html', 'shoe_file': 'game422-small.txt',
+                                     'opponent_covered': True,
                                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                                                  'CK': False, 'T': False}}),
-                 'Small TTT Solo Uncovered': ({'shoe_file': 'game422-small.txt',
-                                               'opponent_covered': False,
+                 'Small TTT Solo Uncovered': ({'html_file': 'ttt-page.html', 'shoe_file':
+                     'game422-small.txt', 'opponent_covered': False,
                                                'covered': {'NK': False, 'N': True, 'U': False,
-                                                           'C': True,
-                                                           'CK': False, 'T': False}})
+                                                           'C': True, 'CK': False, 'T': False}})
                  }
 
         for t in types:
-            st = GameType.query.filter_by(info=t).first()
-            if st is None:
+            gt = GameType.query.filter_by(info=t).first()
+            if gt is None:
                 # Careful: python dicts must be converted in json strings here!
-                st = GameType(params=dumps(types[t]), info=t)
-                db.session.add(st)
+                gt = GameType(params=dumps(types[t]), info=t)
+                db.session.add(gt)
 
         db.session.commit()
 
@@ -251,8 +256,8 @@ def login(message):
         return
 
     print current_user
-    print session['game_cfg']
-    print session['game_type']
+    print "session ", session['game_cfg']
+    print "session: ", session['game_type']
 
     # TODO: get the shoe_file from the context!
     user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
