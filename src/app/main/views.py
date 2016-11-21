@@ -1,6 +1,7 @@
 # from OpenSSL.SSL import Session
 from datetime import datetime
-from flask import render_template, session, redirect, url_for, flash, request
+from flask import render_template, session, redirect, url_for, flash, request, send_file, \
+    send_from_directory, make_response
 from flask_login import current_user, login_required
 from . import main
 from .forms import NameForm, BaseForm, GameTypeForm
@@ -9,6 +10,8 @@ from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField
 from json import loads
+
+import csv, io
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -165,6 +168,32 @@ def config_del(conf_id):
         flash("Warning: the selected configuration was no longer available in the system.")
 
     return redirect(url_for('main.config'))
+
+
+@main.route('/get_csv_data')  # this is a job for GET, not POST
+def plot_csv():
+    return send_file('outputs/Adjacency.csv',
+                     mimetype='text/csv',
+                     attachment_filename='Adjacency.csv',
+                     as_attachment=True)
+
+
+@main.route('/download/<int:sid>')
+def download(sid):
+    moves = Move.query.filter_by(sid=sid).all()
+
+    # put column headers:
+    s = csv2string(['ID', 'USER_ID', 'MOVE', 'TIMESTAMP']) + '\n'
+    for move in moves:
+        s = s + csv2string([move.id, move.uid, move.mv, move.ts]) + '\n'
+
+    # We need to modify the response, so the first thing we
+    # need to do is create a response out of the CSV string
+    response = make_response(s)
+    # This is the key: Set the right header for the response
+    # to be downloaded, instead of just printed on the browser
+    response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
+    return response
 
 
 @main.route('/<int:game_id>')

@@ -6,6 +6,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_socketio import SocketIO
 from config import config
+from csv import writer
+from io import BytesIO
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -16,6 +18,19 @@ socket_io = SocketIO()
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth.login'
+
+
+def csv2string(data):
+    """
+    Format a list of items into a CSV string.
+
+    :param data: list of items
+    :return: a CSV string for the arguments
+    """
+    si = BytesIO()
+    cw = writer(si)
+    cw.writerow(data)
+    return si.getvalue().strip('\r\n')
 
 
 def create_app(config_name):
