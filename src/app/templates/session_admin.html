@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Graphgames - Admin Panel Game Session Management{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Admin Panel - Game Session Management</h1>
+</div>
+<div>
+    <h3>
+        <div><p>Game Sessions available in the system.</p>
+        </div>
+    </h3>
+</div>
+
+<div>
+    <h3>
+        <p>
+            {% if data==None %}
+            Sorry, there are no Game Sessions available in the system.
+            available.
+            {% else %}
+        <form action="/session_admin" method="post">
+            <table class="table table-hover table-sm table-striped" style="width:90%">
+                <tr>
+                    <th>#Session ID</th>
+                    <th>User ID</th>
+                    <th>Type</th>
+                    <th>Start</th>
+                    <th>End</th>
+                </tr>
+                {% for item in form %}
+                {% if item.type=="BooleanField" %}
+                <tr>
+                    <td>
+                        {{item}} {{data[(item.name|int)-1]['id']}}
+                    </td>
+                    <td>
+                        {{data[(item.name|int)-1]['uid']}}
+                    </td>
+                    <td>
+                        {{data[(item.name|int)-1]['type']}}
+                    </td>
+                    <td>
+                        {{data[(item.name|int)-1]['start']}}
+                    </td>
+                    <td>
+                        {{data[(item.name|int)-1]['end']}}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </table>
+            {{form.download() }}
+        </form>
+        {% endif %}
+        </p></h3>
+</div>
+
+{% endblock %}

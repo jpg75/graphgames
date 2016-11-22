@@ -1,17 +1,14 @@
 # from OpenSSL.SSL import Session
 from datetime import datetime
-from flask import render_template, session, redirect, url_for, flash, request, send_file, \
-    send_from_directory, make_response
+from flask import render_template, session, redirect, url_for, flash, request, make_response
 from flask_login import current_user, login_required
 from . import main
 from .forms import NameForm, BaseForm, GameTypeForm
-from .. import db
+from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
-from wtforms import SelectField, SubmitField
+from wtforms import SelectField, SubmitField, BooleanField
 from json import loads
-
-import csv, io
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -64,6 +61,42 @@ def admin():
 
     else:
         return render_template('admin.html')
+
+
+@main.route('/session_admin', methods=['GET', 'POST'])
+@login_required
+def session_admin():
+    if not current_user.is_administrator():
+        flash('Cannot access to session admin panel when not having administrative '
+              'privileges.')
+        redirect(url_for('.index'))
+
+    ss = GameSession.query.all()
+    for gs in ss:
+        field = BooleanField()
+        BaseForm.append_field(str(gs.id), field)
+
+    BaseForm.append_field('download', SubmitField())
+    form = BaseForm(request.form)
+
+    print len(request.form)
+    if request.method == "POST":
+        print "VALIDATED!"
+        sids = [fieldname for fieldname in request.form if fieldname != 'download']
+        moves = Move.query.filter(Move.sid.in_(sids)).all()
+        s = csv2string(['MOVE ID', 'USER_ID', 'SESSION_ID', 'MOVE', 'TIMESTAMP']) + '\n'
+        for move in moves:
+            s = s + csv2string([move.id, move.uid, move.sid, move.mv, move.ts]) + '\n'
+
+        response = make_response(s)
+        response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
+
+        # flash('File download is going to start shortly.')
+        return response
+
+    print "form: ", form.data
+    print "sessions: ", ss
+    return render_template('session_admin.html', form=form, data=ss)
 
 
 @main.route('/user_admin')
@@ -162,20 +195,12 @@ def config_del(conf_id):
     if gt is not None:
         db.session.delete(gt)
         db.session.commit()
-        flash("Game configuration successully deleted.")
+        flash("Game configuration successfully deleted.")
 
     else:
         flash("Warning: the selected configuration was no longer available in the system.")
 
     return redirect(url_for('main.config'))
-
-
-@main.route('/get_csv_data')  # this is a job for GET, not POST
-def plot_csv():
-    return send_file('outputs/Adjacency.csv',
-                     mimetype='text/csv',
-                     attachment_filename='Adjacency.csv',
-                     as_attachment=True)
 
 
 @main.route('/download/<int:sid>')
