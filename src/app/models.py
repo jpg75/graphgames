@@ -199,7 +199,7 @@ class GameSession(db.Model):
     end = db.Column(db.DateTime)
 
     def __repr__(self):
-        return 'Session %r, type %, started: %r, ended: %r' % (self.id, self.type, self.start,
+        return 'Session %r, type %r, started: %r, ended: %r' % (self.id, self.type, self.start,
                                                                self.end)
 
 
