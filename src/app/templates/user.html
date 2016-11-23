@@ -5,15 +5,16 @@
 {% block page_content %}
 
 <div class="page-header">
-    <h1>{{ user.username }}</h1>
+    <h1>{{ current_user.username }}</h1>
 
     {% if current_user.is_administrator() %}
-    <p><a href="mailto:{{ user.email }}">{{ user.email }}</a></p>
+    <p>This user has administrative privileges.</p>
     {% endif %}
-    {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+    <p><a href="mailto:{{ current_user.email }}">{{ current_user.email }}</a></p>
+
     <p>
-        Member since {{ moment(user.member_since).format('L') }}.
-        Last seen {{ moment(user.last_seen).fromNow() }}.
+        Member since {{ moment(current_user.member_since).format('L') }}.
+        Last seen {{ moment(current_user.last_seen).fromNow() }}.
     </p>
 </div>
 {% endblock %}
