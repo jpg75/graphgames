@@ -72,12 +72,13 @@ def session_admin():
 
     print len(request.form)
     if request.method == "POST":
-        print "VALIDATED!"
         sids = [fieldname for fieldname in request.form if fieldname != 'download']
         moves = Move.query.filter(Move.sid.in_(sids)).all()
-        s = csv2string(['MOVE ID', 'USER_ID', 'SESSION_ID', 'MOVE', 'TIMESTAMP']) + '\n'
+        s = csv2string(
+            ['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
         for move in moves:
-            s = s + csv2string([move.id, move.uid, move.sid, move.mv, move.ts]) + '\n'
+            s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
+                '\n'
 
         response = make_response(s)
         response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
@@ -199,9 +200,9 @@ def download(sid):
     moves = Move.query.filter_by(sid=sid).all()
 
     # put column headers:
-    s = csv2string(['ID', 'USER_ID', 'MOVE', 'TIMESTAMP']) + '\n'
+    s = csv2string(['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'PLAY_ROLE']) + '\n'
     for move in moves:
-        s = s + csv2string([move.id, move.uid, move.mv, move.ts]) + '\n'
+        s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.play_role]) + '\n'
 
     # We need to modify the response, so the first thing we
     # need to do is create a response out of the CSV string
