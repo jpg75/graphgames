@@ -13,27 +13,18 @@ from json import loads
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
-    form = NameForm()
     avail_games = GameType.query.all()
     avail_games = {x.id: x.info for x in avail_games}
 
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is None:
-            user = User(username=form.name.data)
-            db.session.add(user)
-            session['known'] = False
-        else:
-            session['known'] = True
-
-        session['name'] = form.name.data
-        form.name.data = ''
-        return redirect(url_for('.index'))
-
     return render_template('index.html',
-                           form=form,
                            games=avail_games,
                            current_time=datetime.utcnow())
+
+
+@main.route('/user')
+@login_required
+def user():
+    return render_template('user.html')
 
 
 @main.route('/gsessions/<username>')
