@@ -19,7 +19,6 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
-
 def loadFile(fqn_file):
     """Returns a list with all the lines in the file. The end line is purged.
     The file can include its full path name.
@@ -184,6 +183,7 @@ class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
 
+
 login_manager.anonymous_user = AnonymousUser
 
 
@@ -303,9 +303,15 @@ def move(message):
     m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
              play_role=message['player'], ts=datetime.now())
     db.session.add(m)
-    db.session.commit()
+
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
+        # Generate the dummy move '-' which represents the end of a hand:
+        m2 = Move(uid=current_user.id, sid=session['game_session'], mv='-',
+                  play_role=message['player'], ts=datetime.now())
+        db.session.add(m2)
         serve_new_hand(message['username'])
+
+    db.session.commit()
 
 
 @socket_io.on('connect')
