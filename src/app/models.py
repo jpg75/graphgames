@@ -120,7 +120,10 @@ class User(UserMixin, db.Model):
         super(User, self).__init__(**kwargs)
         # Any new user created by the GUI has no admin privileges:
         if self.role is None:
-            self.role = Role.query.filter_by(default=True).first()
+            if self.username == 'admin':
+                self.role = Role.query.filter_by(name='Administrator').first()
+            else:
+                self.role = Role.query.filter_by(default=True).first()
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -129,7 +132,7 @@ class User(UserMixin, db.Model):
         return True if self.role.name == 'Administrator' else False
 
     def ping(self):
-        self.last_seen= datetime.utcnow()
+        self.last_seen = datetime.utcnow()
         db.session.add(self)
 
     @property
@@ -161,6 +164,7 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def inject_users():
+        # NOTE: Change admin passwords asap!
         users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo', 'User'),
                  'admin@graphgames.org': ('admin', 'adminpw', 'Administrator')
                  }
@@ -185,6 +189,7 @@ class Move(db.Model):
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
     sid = db.Column(db.Integer)
     mv = db.Column(db.String(64))
+    play_role = db.Column(db.String(64))
     ts = db.Column(db.DateTime)
 
     def __repr__(self):
@@ -201,7 +206,7 @@ class GameSession(db.Model):
 
     def __repr__(self):
         return 'Session %r, type %r, started: %r, ended: %r' % (self.id, self.type, self.start,
-                                                               self.end)
+                                                                self.end)
 
 
 class GameType(db.Model):
@@ -292,7 +297,7 @@ def move(message):
     print current_user.email
     # It actually generates the timestamp now!
     m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
-             ts=datetime.now())
+             player_role=message['player'], ts=datetime.now())
     db.session.add(m)
     db.session.commit()
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
