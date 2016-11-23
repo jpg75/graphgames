@@ -33,15 +33,17 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{{ url_for('main.sessions', username=current_user.username) }}">
+                    <a href="{{ url_for('main.user') }}">
                         Profile
                     </a>
                 </li>
+                {% if current_user.is_administrator() %}
                 <li>
                     <a href="{{ url_for('main.admin') }}">
                         Admin
                     </a>
                 </li>
+                {% endif %}
                 {% endif %}
             </ul>
             <ul class="nav navbar-nav navbar-right">
