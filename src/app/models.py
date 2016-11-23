@@ -19,6 +19,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 
+
 def loadFile(fqn_file):
     """Returns a list with all the lines in the file. The end line is purged.
     The file can include its full path name.
@@ -134,6 +135,7 @@ class User(UserMixin, db.Model):
     def ping(self):
         self.last_seen = datetime.utcnow()
         db.session.add(self)
+        db.session.commit()
 
     @property
     def password(self):
@@ -181,6 +183,8 @@ class User(UserMixin, db.Model):
 class AnonymousUser(AnonymousUserMixin):
     def is_administrator(self):
         return False
+
+login_manager.anonymous_user = AnonymousUser
 
 
 class Move(db.Model):
@@ -297,7 +301,7 @@ def move(message):
     print current_user.email
     # It actually generates the timestamp now!
     m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
-             player_role=message['player'], ts=datetime.now())
+             play_role=message['player'], ts=datetime.now())
     db.session.add(m)
     db.session.commit()
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
