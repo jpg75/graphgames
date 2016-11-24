@@ -64,7 +64,11 @@ $(document).ready(function () {
           		});
 			}
 			else {			
-				// Invert the players when an exchange is legal: 
+				// current valid move, sent before
+				// inverting players
+				sendMove($toParent.attr('id'), moved_card);
+
+				// Invert the players when an exchange is legal:
 				// the parent objects are different
 				if (! $toParent.is($fromParent) && legal_move) {
 					invertPlayers($fromParent);
@@ -81,7 +85,7 @@ $(document).ready(function () {
           		});
 
           		score++;
-				sendMove($toParent.attr('id'), moved_card);  // current valid move 
+				// sendMove($toParent.attr('id'), moved_card);  // current valid move
           	}
 	    }
 	});
@@ -177,6 +181,7 @@ function checkMove($from, $fromP, $to, $toP){
 * Make the current player card slot thicker and colored (red). 
 */
 function emphasizeActivePlayer() {
+    console.log('ephasize: '+player);
 	$('#'+player).css('border', '2px solid red');
 }
 
@@ -199,7 +204,8 @@ function invertPlayers($fromParent) {
 /**
 * Cover the opponent card if the flag is set. The flag is set by the server at every 'hand' message.
 */
-function eventuallyToggleOpponent(){
+function eventuallyToggleOpponent() {
+    console.log('eventually toggle: '+player);
 	if (player == 'NK'){
 		let cardObj = $("#CK").children();
 		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
@@ -225,7 +231,7 @@ function eventuallyToggleOpponent(){
 
 
 /**
-* Set cards covered accrding to the server data sent at every hand change. 
+* Set cards covered according to the server data sent at every hand change.
 */
 function setCoveredCards() {
 	if (covered !== null) {  
@@ -256,11 +262,11 @@ function setCoveredCards() {
 function passMove(){
 	let output_n = $('.card').data('number');
 	console.log("Data: ", output_n);
+    // Send move before inverting players
+    sendMove('P', '');
 
 	invertPlayers($('#'+player));
 	makeDraggable();
-
-	sendMove('P', '');	
 }
 
 /*******************************************************************
@@ -335,6 +341,7 @@ function handleHand(message) {
 */
 function sendMove(move, moved_card){
 	let d = new Date();
+	console.log('sending: '+player+ ' move: '+move);
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
 		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
 		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
