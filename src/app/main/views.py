@@ -62,13 +62,16 @@ def session_admin():
               'privileges.')
         redirect(url_for('.index'))
 
+    class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
+        pass
+
     ss = GameSession.query.all()
     for gs in ss:
         field = BooleanField()
-        BaseForm.append_field(str(gs.id), field)
+        F.append_field(str(gs.id), field)
 
-    BaseForm.append_field('download', SubmitField())
-    form = BaseForm(request.form)
+    F.append_field('download', SubmitField())
+    form = F(request.form)
 
     print len(request.form)
     if request.method == "POST":
@@ -94,6 +97,9 @@ def session_admin():
 @main.route('/user_admin')
 @login_required
 def user_admin():
+    class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
+        pass
+
     if not current_user.is_administrator():
         flash('Cannot access to admin panel features when not having administrative privileges.')
         redirect(url_for('.index'))
@@ -105,10 +111,10 @@ def user_admin():
                                                     (Role.opposite_role(user.role.name),
                                                      Role.opposite_role(user.role.name))
                                                     ])
-        BaseForm.append_field('user_' + str(user.id), field)
+        F.append_field('user_' + str(user.id), field)
 
-    BaseForm.append_field('Submit privilege change', SubmitField())
-    form = BaseForm()
+    F.append_field('Submit privilege change', SubmitField())
+    form = F(request.form)
 
     if form.validate_on_submit():
         print form.data

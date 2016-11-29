@@ -269,17 +269,13 @@ def login(message):
     print "session ", session['game_cfg']
     print "session: ", session['game_type']
 
-    # TODO: get the shoe_file from the context!
     user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
     user_d[current_user.username].purgelines()
 
     hand = user_d[current_user.username].content.pop(0)
     hand = hand.upper()
-    # print hand
     hand = hand.split()
-    # print hand
     hand = dict(zip(SHOE_FILE_ORDER, hand))
-    # print hand
 
     emit('hand', {'success': 'ok', 'hand': hand,
                   'covered': session['game_cfg']['covered'],
