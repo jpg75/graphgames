@@ -272,14 +272,15 @@ def login(message):
     user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
     user_d[current_user.username].purgelines()
 
-    hand = user_d[current_user.username].content.pop(0)
-    hand = hand.upper()
-    hand = hand.split()
-    hand = dict(zip(SHOE_FILE_ORDER, hand))
-
-    emit('hand', {'success': 'ok', 'hand': hand,
-                  'covered': session['game_cfg']['covered'],
-                  'opponent_covered': session['game_cfg']['opponent_covered']})
+    serve_new_hand(current_user.username)
+    # hand = user_d[current_user.username].content.pop(0)
+    # hand = hand.upper()
+    # hand = hand.split()
+    # hand = dict(zip(SHOE_FILE_ORDER, hand))
+    #
+    # emit('hand', {'success': 'ok', 'hand': hand,
+    #               'covered': session['game_cfg']['covered'],
+    #               'opponent_covered': session['game_cfg']['opponent_covered']})
 
 
 @socket_io.on('move')
@@ -302,10 +303,15 @@ def move(message):
 
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
         # Generate the dummy move '-' which represents the end of a hand:
-        m2 = Move(uid=current_user.id, sid=session['game_session'], mv='-',
-                  play_role=message['player'], ts=datetime.now())
-        db.session.add(m2)
         serve_new_hand(message['username'])
+
+    else:
+        player = message['player']
+        if player == 'CK':
+            player = 'NK'
+        else:
+            player = 'CK'
+        emit('toggle_players', {'player': player})
 
     db.session.commit()
 
@@ -334,6 +340,11 @@ def serve_new_hand(username):
         hand = hand.upper()
         hand = hand.split()
         hand = dict(zip(SHOE_FILE_ORDER, hand))
+
+        m2 = Move(uid=current_user.id, sid=session['game_session'], mv='HAND ' + dumps(hand),
+                  play_role='', ts=datetime.now())
+        db.session.add(m2)
+
         print "Serving new HAND: %s" % hand
         emit('hand', {'success': 'ok', 'hand': hand,
                       'covered': session['game_cfg']['covered'],
