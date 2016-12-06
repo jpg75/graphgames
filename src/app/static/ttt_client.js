@@ -52,7 +52,7 @@ $(document).ready(function () {
               	$toParent = $(this);
 
 			legal_move = checkMove($from, $fromParent, $to, $toParent);
-			console.log("Is legal: "+ legal_move);
+			// console.log("Is legal: "+ legal_move);
 			let moved_card = $from.data('card');
 			
 			if (!legal_move) {
@@ -65,18 +65,10 @@ $(document).ready(function () {
           		});
 			}
 			else {			
-				// current valid move, sent before
-				// inverting players
+				/* Current valid move, sent before inverting players. Currently, the
+				 server handles the switching to another user (role).
+				*/
 				sendMove($toParent.attr('id'), moved_card);
-
-				// Invert the players when an exchange is legal:
-				// the parent objects are different
-				/*NOTE: SHOULD NOT DO THAT!! it is eventually driven by the server when sending
-				the hand*/
-				/*if (! $toParent.is($fromParent) && legal_move) {
-					invertPlayers($fromParent);
-		  		}
-		  		*/
 
 				window.endPos = $to.offset();
 
@@ -85,11 +77,10 @@ $(document).ready(function () {
         	    	$toParent.html($from.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             		$fromParent.html($to.css({position: 'relative', left: '', top: '', 'z-index': ''}));
             		makeDraggable();
-            		console.log('animation ended!');
+            		// console.log('animation ended!');
           		});
 
           		score++;
-				// sendMove($toParent.attr('id'), moved_card);  // current valid move
           	}
 	    }
 	});
@@ -108,8 +99,8 @@ $(document).ready(function () {
 * current player is made enabled and emphasized.
 */
 function makeDraggable() {
-	console.log('player: '+ player);
-	console.log('opponent covered: '+ opponent_covered);
+	// console.log('player: '+ player);
+	// console.log('opponent covered: '+ opponent_covered);
 
     $('.card').draggable({
     	disabled: true,
@@ -160,7 +151,7 @@ function initCardsData(){
 */
 function checkMove($from, $fromP, $to, $toP){
 	let dest_slot = $toP.attr('id');
-	console.log('id of destination: '+dest_slot);
+	// console.log('id of destination: '+dest_slot);
  
 	let index = allowed_moving_zones.lastIndexOf(dest_slot);
 	if (index == -1) return false;
@@ -185,7 +176,7 @@ function checkMove($from, $fromP, $to, $toP){
 * Make the current player card slot thicker and colored (red). 
 */
 function emphasizeActivePlayer() {
-    console.log('emphasize: '+player);
+    // console.log('emphasize: '+player);
 	$('#'+player).css('border', '2px solid red');
 }
 
@@ -194,16 +185,12 @@ function emphasizeActivePlayer() {
 * color. It is just called by a message handler.
 */
 function invertPlayers($fromParent) {
-	// Invert the players and sets a red border over the current one
 	if (player=='CK') {
 		player = 'NK';
-		// $fromParent.css('border', '2px solid #333');
 	}
 	else {
 		player = 'CK';
-		// $fromParent.css('border', '2px solid #333');
 	}
-	// emphasizeActivePlayer();
 }
 
 /**
@@ -241,7 +228,6 @@ function eventuallyToggleOpponent() {
 function setCoveredCards() {
 	if (covered !== null) {  
 		jQuery.each(covered, function(card, val) { // inspect each card by ID
-			// console.log(card+' '+val);
 			$("#" + card).css('border', '2px solid #333');  // resets the card-slot border as unmarked
 			if ( (card != 'GC') && (card != 'PL') ) {
 				let cardObj = $("#" + card).children();
@@ -270,7 +256,6 @@ function passMove(){
     // Send move before inverting players
     sendMove('P', '');
 
-	// invertPlayers($('#'+player));
 	makeDraggable();
 }
 
@@ -282,10 +267,6 @@ function passMove(){
 * Log into the server. Initialize the connection.
 */
 function login() {
-	// let id = Math.random();
-	// username = window.prompt("Please, enter your username", 'User_'+String(id).slice(-5));
-
-	// if (username == null) username = 'User_'+String(id).slice(-5);
 	// console.log('Username: '+username);
 	socket.emit('login', {'username': ''});
 }
@@ -298,7 +279,7 @@ function handleHand(message) {
 	console.log('Received HAND: '+ message);
 
 	let cards = message['hand'];
-	
+	// collect global data from message:
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
 
@@ -312,44 +293,18 @@ function handleHand(message) {
 	jQuery.each(cards, function(i, val) {
 		console.log(i+' '+val);
 
-		if (i == 'GC'){  // set goal card
+		if (i == 'GC') {  // set goal card
 			goalCard = val;
 		}
 		else if (i == 'PL') {  // set player turn
+		    /* NOTE: ths is the only case in which we call invertPlayers directly since we do not
+		    receive a 'toggle_players' message after a move that closes the current hand */
 		    if (val != player)
-		        invertPlayers($("#"+i));
-			// player = val; // do not touch player var directly!
-		}
-		else {
-
-		    // NOTE: should call setCoveredCards and initCardsData !!
-
- 			let cardObj = $("#" + i).children();
- 			// put the corresponding card picture into the front card img:
- 			cardObj.find("[src!='static/card_back.png']").attr('src', 'static/'+val+'.png');
-
-            /* Check if the card is actually uncovered (by looking at the back image) and
-            according to the required status it flips it or not: */
-			let visibility = cardObj.find("[src='static/card_back.png']").css('display');
-			if (visibility == 'none' && covered[i]) // uncovered amd must be covered
-				cardObj.find('img').toggle();
-			else if (visibility == 'inline' && !covered[i]) // covered and must be uncovered
-				cardObj.find('img').toggle();
-
-			cardObj.data('color', cards_colors[val] );
-			cardObj.data('number', val.charAt(0) );
-			cardObj.data('card', val );
-
-			/*
-			console.log( i + ": " + cardObj.data('number') );
-			console.log( i + ": " + cardObj.data('color') );
-			console.log( i + ": " + cardObj.data('card') );
-			*/ 
+		        invertPlayers($("#"+i));  // NEVER touch player var directly!
 		}
 	});
 
 	makeDraggable();
-	//eventuallyToggleOpponent();
 	// $.fx.off = false; // enable ALL animations
 }
 
