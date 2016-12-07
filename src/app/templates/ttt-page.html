@@ -1,14 +1,23 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <title>TTT game based on GraphGames: Swapping of tiles with Animation</title> 
-  <meta charset="UTF-8">
-  <link rel="stylesheet" type="text/css" href="static/style.css">
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
-  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
-  <script type="text/javascript" src="static/ttt_client.js"></script>
-</head>
+{% extends "base.html" %}
+
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %} TTT GraphGames Edition: Swapping of tiles with Animation {% endblock %}
+
+{% block head %}
+{{ super() }}
+    <link rel="stylesheet" type="text/css" href="static/style.css">
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.1/jquery-ui.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+    <script src="static/ttt_client.js"></script>
+{% endblock %}
+
+{% block page_content %}
 <body>
 <div id='content'>
 <!-- > initial card positions:
@@ -78,7 +87,7 @@ NK    N   UP   C    CK   T	GC	PL
 
 <center>
 <div id="passButton">
-  <button onclick="passMove()">PASS</button>
+  <button type="button" class="btn btn-primary btn-lg" onclick="passMove()">PASS</button>
 </div>
 
 </center>
@@ -86,4 +95,5 @@ NK    N   UP   C    CK   T	GC	PL
 
 </body>
 </html>
+{% endblock %}
 
