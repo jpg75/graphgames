@@ -143,6 +143,11 @@ function initCardsData(){
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
 	});
+
+	// set correct card into goal card GUI:
+	let gcfile = "static/" + goalCard + ".png";
+	$('#GC').find("img").attr('src', gcfile);
+
 }
 
 

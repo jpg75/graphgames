@@ -25,94 +25,102 @@
     3C   4H   2H   3H   2C   4C	2H	ck
     -->
     <div class="row">
-        <div class="col-sm-3 text-center">
-            <h3>Color Keeper</h3>
+
+        <div class="col-sm-9 col-md-9 text-center">
+            <div class="row">
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Color Keeper</h3>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Target</h3>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Number Keeper</h3>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='CK' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/2C.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='T' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/4C.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='NK' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/3C.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Color</h3>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Up</h3>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <h3>Number</h3>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='C' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/3H.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='U' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/2H.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-4 col-md-4 text-center">
+                    <div id='N' class='cardSlot'>
+                        <div class="card">
+                            <img src="static/4H.png" class="card-img" style="display: inline;">
+                            <img src="static/card_back.png" class="card-img" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-        <div class="col-sm-3 text-center">
-            <h3>Target</h3>
-        </div>
-        <div class="col-sm-3 text-center">
-            <h3>Number Keeper</h3>
-        </div>
-        <div class="col-sm-3 text-center neutral-cell">
-            <h3>Extra column</h3>
+
+        <div class="col-sm-3 col-md-3 text-center neutral-cell">
+            <div id="GC">
+                <h3>Goal card:</h3>
+                <img src="static/card_back.png" class="card-img" style="display: inline;">
+            </div>
+            <div id="info">
+                <h5>
+                    <p>Number of moves:</p>
+                    <p>Current player turn:</p>
+                </h5>
+            </div>
         </div>
     </div>
 
-    <div class="row flex-items-sm-middle">
-        <div class="col-sm-3  text-center">
-            <div id='CK' class='cardSlot'>
-                <div class="card">
-                    <img src="static/2C.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center">
-            <div id='T' class='cardSlot'>
-                <div class="card">
-                    <img src="static/4C.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center">
-            <div id='NK' class='cardSlot'>
-                <div class="card">
-                    <img src="static/3C.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center neutral-cell">
-            BLANK
-        </div>
-    </div>
-
-    <div class="row flex-items-sm-middle">
-        <div class="col-sm-3 text-center">
-            <h3>Color</h3>
-        </div>
-        <div class="col-sm-3 text-center">
-            <h3>Up</h3>
-        </div>
-        <div class="col-sm-3 text-center">
-            <h3>Number</h3>
-        </div>
-        <div class="col-sm-3 text-center neutral-cell">
-            <h3>Extra column</h3>
-        </div>
-    </div>
-
-    <div class="row flex-items-sm-middle">
-        <div class="col-sm-3 text-center">
-            <div id='C' class='cardSlot'>
-                <div class="card">
-                    <img src="static/3H.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center">
-            <div id='U' class='cardSlot'>
-                <div class="card">
-                    <img src="static/2H.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center">
-            <div id='N' class='cardSlot'>
-                <div class="card">
-                    <img src="static/4H.png" class="card-img" style="display: inline;">
-                    <img src="static/card_back.png" class="card-img" style="display: none;">
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-3 text-center neutral-cell">
-            Extra column
-        </div>
-    </div>
 </div>
 
 </div>

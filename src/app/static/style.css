@@ -31,6 +31,8 @@ th,td {
 }
 
 .cardSlot {
+    margin: 0, auto;
+	background: #ddf;
     float: left;
     width: 100px;
     height: 120px;
@@ -41,8 +43,8 @@ th,td {
     -moz-border-radius: 10px;
     -webkit-border-radius: 10px;
     border-radius: 10px;
-	margin: 0 0 0 10px;
-	background: #ddf;
+	display: table;
+	/* margin: 0 0 0 10px; */
 }
 
 .droppable {
@@ -76,6 +78,8 @@ th,td {
 	border: 2px solid red;
 }
 
-
+.neutral-cell {
+    background: #ddf;
+}
 
 
