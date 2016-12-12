@@ -19,7 +19,7 @@
 <div>
     <h3>
         <div>
-            <a class="btn btn-success" href="{{ url_for('main.config_add')}}">Add</a>
+            <a class="btn btn-success" href="{{ url_for('adm.config_add')}}">Add</a>
         </div>
         <p>
             {% if data==None %}
@@ -45,9 +45,9 @@
                 </td>
                 <td>
                     <a class="btn btn-primary"
-                       href="{{ url_for('main.config_edit', conf_id=item.id)}}">Edit</a>
+                       href="{{ url_for('adm.config_edit', conf_id=item.id)}}">Edit</a>
                     <a class="btn btn-danger"
-                       href="{{ url_for('main.config_del', conf_id=item.id)}}">Del</a>
+                       href="{{ url_for('adm.config_del', conf_id=item.id)}}">Del</a>
                 </td>
             </tr>
             {% endfor %}

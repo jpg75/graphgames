@@ -1,9 +1,8 @@
 # from OpenSSL.SSL import Session
-from datetime import datetime
 from flask import render_template, session, redirect, url_for, flash, request, make_response
 from flask_login import current_user, login_required
-from . import main
-from .forms import BaseForm, GameTypeForm
+from . import adm
+from ..main.forms import BaseForm, GameTypeForm
 from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
@@ -11,39 +10,7 @@ from wtforms import SelectField, SubmitField, BooleanField
 from json import loads
 
 
-@main.route('/', methods=['GET', 'POST'])
-def index():
-    avail_games = GameType.query.all()
-    avail_games = {x.id: x.info for x in avail_games}
-
-    return render_template('index.html',
-                           games=avail_games,
-                           current_time=datetime.utcnow())
-
-
-@main.route('/user')
-@login_required
-def user():
-    return render_template('user.html')
-
-
-@main.route('/gsessions/<username>')
-@login_required
-def sessions(username):
-    gs = GameSession.query.filter_by(uid=current_user.id).all()
-
-    return render_template('sessions.html', user=current_user, data=gs)
-
-
-@main.route('/gsessions/<int:sid>')
-@login_required
-def session_moves(sid):
-    s = Move.query.filter_by(sid=sid).all()
-
-    return render_template('session.html', user=current_user, data=s, sid=sid)
-
-
-@main.route('/adm', methods=['GET', 'POST'])
+@adm.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin():
     if not current_user.is_administrator():
@@ -51,10 +18,10 @@ def admin():
         redirect(url_for('.index'))
 
     else:
-        return render_template('adm.html')
+        return render_template('adm/admin.html')
 
 
-@main.route('/session_admin', methods=['GET', 'POST'])
+@adm.route('/session_admin', methods=['GET', 'POST'])
 @login_required
 def session_admin():
     if not current_user.is_administrator():
@@ -91,10 +58,10 @@ def session_admin():
 
     print "form: ", form.data
     print "sessions: ", ss
-    return render_template('session_admin.html', form=form, data=ss)
+    return render_template('adm/session_admin.html', form=form, data=ss)
 
 
-@main.route('/user_admin')
+@adm.route('/user_admin')
 @login_required
 def user_admin():
     class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
@@ -128,22 +95,22 @@ def user_admin():
         flash('Privileges updated.')
         return redirect(url_for('.index'))
 
-    return render_template('user_admin.html', form=form)
+    return render_template('adm/user_admin.html', form=form)
 
 
-@main.route('/config')
+@adm.route('/config')
 @login_required
 def config():
     if not current_user.is_administrator():
         flash('Cannot access to adm panel features when not having administrative privileges.')
-        redirect(url_for('.index'))
+        redirect(url_for('main.index'))
 
     st = GameType.query.all()
 
-    return render_template('config.html', data=st)
+    return render_template('adm/config.html', data=st)
 
 
-@main.route('/config_add', methods=['GET', 'POST'])
+@adm.route('/config_add', methods=['GET', 'POST'])
 @login_required
 def config_add():
     if not current_user.is_administrator():
@@ -158,10 +125,10 @@ def config_add():
         flash('New game configuration injected.')
         return redirect(request.args.get('next') or url_for('main.config'))
 
-    return render_template('config_add.html', form=form)
+    return render_template('adm/config_add.html', form=form)
 
 
-@main.route('/config_edit/<int:conf_id>', methods=['GET', 'POST'])
+@adm.route('/config_edit/<int:conf_id>', methods=['GET', 'POST'])
 @login_required
 def config_edit(conf_id):
     if not current_user.is_administrator():
@@ -183,10 +150,10 @@ def config_edit(conf_id):
     form.params.data = gt.params
     form.submit.label.text = 'Update configuration'
 
-    return render_template('config_edit.html', form=form, conf_id=conf_id)
+    return render_template('adm/config_edit.html', form=form, conf_id=conf_id)
 
 
-@main.route('/config_del/<int:conf_id>')
+@adm.route('/config_del/<int:conf_id>')
 @login_required
 def config_del(conf_id):
     gt = GameType.query.filter_by(id=conf_id).first()
@@ -198,10 +165,10 @@ def config_del(conf_id):
     else:
         flash("Warning: the selected configuration was no longer available in the system.")
 
-    return redirect(url_for('main.config'))
+    return redirect(url_for('adm.config'))
 
 
-@main.route('/download/<int:sid>')
+@adm.route('/download/<int:sid>')
 def download(sid):
     moves = Move.query.filter_by(sid=sid).all()
 
@@ -219,35 +186,4 @@ def download(sid):
     return response
 
 
-@main.route('/<int:game_id>')
-@authenticated_only
-def show_game(game_id):
-    """
-    This dynamic route links to the actual html file managing the game requested. The 'game_id'
-    parameter is the game type, alias one of the available configuration types/config in the
-    current DB.
-
-    Before routing to the file, a GameSession objects is generated over the DB linking the
-    current user to the newly created session.
-
-    The info about the game session (id), the game cfg (as a python dict) and the game type (
-    SessionType in DB) are injected into the WSGI session and are readable from the game
-    web-socket implementation.
-
-    :param game_id: the corresponding id in the SessionType DB class.
-    :return:
-    """
-    # Generate a GameSession and add to the WSGI session
-    s = GameSession(uid=current_user.id, type=game_id, start=datetime.now())
-    db.session.add(s)
-    db.session.commit()
-
-    session['game_session'] = s.id
-
-    st = GameType.query.filter_by(id=game_id).first()
-    session['game_cfg'] = loads(st.params)  # the json from the DB is converted into python dict
-    session['game_type'] = game_id
-
-    # return render_template(session['game_cfg']['html_file'])
-    return render_template("ttt-page.html")
 

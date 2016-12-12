@@ -9,7 +9,6 @@ from flask import Flask, render_template, session, request, redirect, \
     url_for
 from flask_socketio import SocketIO, emit, join_room, leave_room, \
     close_room, rooms, disconnect
-# import json
 from flask_script import Manager, Shell
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment

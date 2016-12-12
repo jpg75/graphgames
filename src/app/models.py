@@ -118,9 +118,9 @@ class User(UserMixin, db.Model):
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
-        # Any new user created by the GUI has no admin privileges:
+        # Any new user created by the GUI has no adm privileges:
         if self.role is None:
-            if self.username == 'admin':
+            if self.username == 'adm':
                 self.role = Role.query.filter_by(name='Administrator').first()
             else:
                 self.role = Role.query.filter_by(default=True).first()
@@ -165,9 +165,9 @@ class User(UserMixin, db.Model):
 
     @staticmethod
     def inject_users():
-        # NOTE: Change admin passwords asap!
+        # NOTE: Change adm passwords asap!
         users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo', 'User'),
-                 'admin@graphgames.org': ('admin', 'adminpw', 'Administrator')
+                 'adm@graphgames.org': ('adm', 'adminpw', 'Administrator')
                  }
 
         for u in users:
