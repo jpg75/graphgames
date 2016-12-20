@@ -148,7 +148,7 @@ function initCardsData(){
 	let gcfile = "static/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 	// UGLY! You can use Knockout.js for example
-    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: "+player+"</p></h5></div>"');
+    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: "+player+'</p></h5></div>');
 }
 
 
