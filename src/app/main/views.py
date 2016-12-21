@@ -255,6 +255,5 @@ def show_game(game_id):
     session['game_cfg'] = loads(st.params)  # the json from the DB is converted into python dict
     session['game_type'] = game_id
 
-    # return render_template(session['game_cfg']['html_file'])
-    return render_template("ttt-page.html")
+    return render_template(session['game_cfg']['html_file'])
 
