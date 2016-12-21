@@ -7,9 +7,9 @@ from .forms import BaseForm, GameTypeForm
 from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
-from wtforms import SelectField, SubmitField, BooleanField
+from wtforms import SelectField, SubmitField
 from json import loads
-
+from ..tasks import download_task
 
 @main.route('/', methods=['GET', 'POST'])
 def index():
@@ -54,44 +54,44 @@ def admin():
         return render_template('adm.html')
 
 
-@main.route('/session_admin', methods=['GET', 'POST'])
-@login_required
-def session_admin():
-    if not current_user.is_administrator():
-        flash('Cannot access to session adm panel when not having administrative '
-              'privileges.')
-        redirect(url_for('.index'))
-
-    class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
-        pass
-
-    ss = GameSession.query.all()
-    for gs in ss:
-        field = BooleanField()
-        F.append_field(str(gs.id), field)
-
-    F.append_field('download', SubmitField())
-    form = F(request.form)
-
-    print len(request.form)
-    if request.method == "POST":
-        sids = [fieldname for fieldname in request.form if fieldname != 'download']
-        moves = Move.query.filter(Move.sid.in_(sids)).all()
-        s = csv2string(
-            ['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
-        for move in moves:
-            s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
-                '\n'
-
-        response = make_response(s)
-        response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
-
-        # flash('File download is going to start shortly.')
-        return response
-
-    print "form: ", form.data
-    print "sessions: ", ss
-    return render_template('session_admin.html', form=form, data=ss)
+# @main.route('/session_admin', methods=['GET', 'POST'])
+# @login_required
+# def session_admin():
+#     if not current_user.is_administrator():
+#         flash('Cannot access to session adm panel when not having administrative '
+#               'privileges.')
+#         redirect(url_for('.index'))
+#
+#     class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
+#         pass
+#
+#     ss = GameSession.query.all()
+#     for gs in ss:
+#         field = BooleanField()
+#         F.append_field(str(gs.id), field)
+#
+#     F.append_field('download', SubmitField())
+#     form = F(request.form)
+#
+#     print len(request.form)
+#     if request.method == "POST":
+#         sids = [fieldname for fieldname in request.form if fieldname != 'download']
+#         moves = Move.query.filter(Move.sid.in_(sids)).all()
+#         s = csv2string(
+#             ['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
+#         for move in moves:
+#             s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
+#                 '\n'
+#
+#         response = make_response(s)
+#         response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
+#
+#         # flash('File download is going to start shortly.')
+#         return response
+#
+#     print "form: ", form.data
+#     print "sessions: ", ss
+#     return render_template('session_admin.html', form=form, data=ss)
 
 
 @main.route('/user_admin')
@@ -217,6 +217,13 @@ def download(sid):
     # to be downloaded, instead of just printed on the browser
     response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
     return response
+
+
+# @main.route('/download/<int:sid>')
+def download_once(sid):
+    task_res = download_task.delay(sid)
+    task_res.wait()
+    pass
 
 
 @main.route('/<int:game_id>')

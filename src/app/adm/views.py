@@ -1,5 +1,5 @@
 # from OpenSSL.SSL import Session
-from flask import render_template, session, redirect, url_for, flash, request, make_response
+from flask import render_template, redirect, url_for, flash, request, make_response
 from flask_login import current_user, login_required
 from . import adm
 from ..main.forms import BaseForm, GameTypeForm
@@ -7,7 +7,6 @@ from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField, BooleanField
-from json import loads
 
 
 @adm.route('/admin', methods=['GET', 'POST'])
@@ -28,6 +27,7 @@ def session_admin():
         flash('Cannot access to session adm panel when not having administrative '
               'privileges.')
         redirect(url_for('.index'))
+        # redirect(url_for('.admin'))
 
     class F(BaseForm):  # internal subclass to avoid polluting the BaseForm class
         pass
@@ -56,8 +56,8 @@ def session_admin():
         # flash('File download is going to start shortly.')
         return response
 
-    print "form: ", form.data
-    print "sessions: ", ss
+    # print "form: ", form.data
+    # print "sessions: ", ss
     return render_template('adm/session_admin.html', form=form, data=ss)
 
 
