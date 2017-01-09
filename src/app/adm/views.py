@@ -4,9 +4,35 @@ from flask_login import current_user, login_required
 from . import adm
 from ..main.forms import BaseForm, GameTypeForm
 from .. import db, csv2string
-from ..models import User, GameType, GameSession, Role, Move
-from ..decorators import authenticated_only, admin_required
+from ..models import User, GameType, GameSession, Role, Move, SHOE_FILE_ORDER
+# from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField, BooleanField
+from json import loads
+
+
+def aggregate_moves(moves, sids):
+    unique_hands = []
+    current_hand = None
+    sid_data = dict([(x, {}) for x in sids])  # maps <sid> -> { <hand> -> [seq] }
+    FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
+
+    for move in moves:
+        if move.mv.startswith('HAND'):
+            if not move.mv in unique_hands:
+                d = loads(move.mv.replace('HAND',''))
+                current_hand = ' '.join(d[x] for x in FILE_ORDER)
+                unique_hands.append(current_hand)
+                # current_hand = move.mv
+            else:
+                d = loads(move.mv.replace('HAND',''))
+                current_hand = ' '.join(d[x] for x in FILE_ORDER)
+        else:
+            if current_hand in sid_data[str(move.sid)]:  # hand exists for this sid
+                sid_data[str(move.sid)][current_hand].append(move.mv)
+            else:  # hand does not exists and thus the linked list
+                sid_data[str(move.sid)][current_hand] = [move.mv]
+
+    return sid_data, unique_hands
 
 
 @adm.route('/admin', methods=['GET', 'POST'])
@@ -44,11 +70,33 @@ def session_admin():
     if request.method == "POST":
         sids = [fieldname for fieldname in request.form if fieldname != 'download']
         moves = Move.query.filter(Move.sid.in_(sids)).all()
-        s = csv2string(
-            ['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
-        for move in moves:
-            s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
-                '\n'
+
+        data, hands = aggregate_moves(moves, sids)
+
+        headers = ['HAND']
+        for s in sids:
+            headers.append('SID_' + s)
+
+        s = csv2string(headers) + '\n'
+        # s = csv2string(
+        #     ['HAND', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
+        # for move in moves:
+        #    s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
+        #        '\n'
+
+        line = []
+        for h in hands:
+            line.append(h)
+            for sid in sids:
+                if h in data[sid]:
+                    line.append(''.join(data[sid][h]))
+                else:
+                    line.append('NA')
+
+            s = s + csv2string(line) + '\n'
+            line[:] = []
+
+        print s
 
         response = make_response(s)
         response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
@@ -184,6 +232,3 @@ def download(sid):
     # to be downloaded, instead of just printed on the browser
     response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
     return response
-
-
-
