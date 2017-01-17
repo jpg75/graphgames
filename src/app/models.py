@@ -227,11 +227,12 @@ class GameType(db.Model):
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
         types = {'Small TTT Solo': ({'html_file': 'ttt-page.html', 'shoe_file': 'game422-small.txt',
+                                     'replay': False,
                                      'opponent_covered': True,
                                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                                                  'CK': False, 'T': False}}),
                  'Small TTT Solo Uncovered': ({'html_file': 'ttt-page.html', 'shoe_file':
-                     'game422-small.txt', 'opponent_covered': False,
+                     'game422-small.txt', 'opponent_covered': False, 'replay': False,
                                                'covered': {'NK': False, 'N': True, 'U': False,
                                                            'C': True, 'CK': False, 'T': False}})
                  }
@@ -305,7 +306,6 @@ def move(message):
         else:
             player = 'CK'
         emit('toggle_players', {'player': player})
-
 
 
 @socket_io.on('connect')
