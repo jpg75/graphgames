@@ -11,6 +11,7 @@ from wtforms import SelectField, SubmitField
 from json import loads
 from ..tasks import download_task
 
+
 @main.route('/', methods=['GET', 'POST'])
 def index():
     avail_games = GameType.query.all()
@@ -242,9 +243,9 @@ def show_game(game_id):
     web-socket implementation.
 
     :param game_id: the corresponding id in the SessionType DB class.
-    :return:
+    :return: the corresponding game template
     """
-    # Generate a GameSession and add to the WSGI session
+    # Generate a GameSession db object and add to the WSGI session
     s = GameSession(uid=current_user.id, type=game_id, start=datetime.now())
     db.session.add(s)
     db.session.commit()
@@ -257,3 +258,26 @@ def show_game(game_id):
 
     return render_template(session['game_cfg']['html_file'])
 
+
+@main.route('/<int:sid>')
+@authenticated_only
+def replay_game_session(sid):
+    """
+    This dynamic route generate a dummy session of the required session game. This section is
+    automatic, meaning that the system replays each moves stored in the session following the
+    original temporal sequence.
+    The actual game type is collected by the game session.
+
+    The user can just watch the recorded session or quit visualization.
+
+    The DB is not affected (no writes) by this route operation.
+
+    :param sid:
+    :return: the corresponding game template
+    """
+    s = GameSession.query.filter_by(id=sid).first()
+    gt = GameType.query.filter_by(id=s.type).first()
+    gt_struct = loads(gt.params)
+    gt_struct['replay'] = True  # set replay active
+
+    return render_template(gt_struct['game_cfg']['html_file'])
