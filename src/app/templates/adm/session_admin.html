@@ -29,6 +29,7 @@
                     <th>Type</th>
                     <th>Start</th>
                     <th>End</th>
+                    <th>Options</th>
                 </tr>
                 {% for item in form %}
                 {% if item.type=="BooleanField" %}
@@ -47,6 +48,11 @@
                     </td>
                     <td>
                         {{data[(item.name|int)-1]['end']}}
+                    </td>
+                    <td>
+                        <a class="btn btn-primary"
+                           href="{{ url_for('main.replay_game', sid=item.id)}}">Replay
+                        </a>
                     </td>
                 </tr>
                 {% endif %}
