@@ -7,6 +7,7 @@ from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
 cfg = os.getenv('FLASK_CONFIG') or 'default'
+
 app = create_app(cfg)
 manager = Manager(app)
 migrate = Migrate(app, db)
@@ -41,8 +42,8 @@ def populate():
 if __name__ == '__main__':
     manager.run()
 
-# NOTE: in order to regenerate the DB:
-# > db init
-# > db migrate -m "comment"
-# > db upgrade
-# > manage.py populate
+    # NOTE: in order to regenerate the DB:
+    # > db init
+    # > db migrate -m "comment"
+    # > db upgrade
+    # > manage.py populate
