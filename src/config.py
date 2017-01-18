@@ -7,10 +7,11 @@ class Config:
     SSL_DISABLE = True
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'itsasecret!'
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
-    FLASKY_MAIL_SUBJECT_PREFIX = '[Flasky]'
-    FLASKY_MAIL_SENDER = 'Flasky Admin <flasky@example.com>'
-    FLASKY_ADMIN = os.environ.get('FLASKY_ADMIN')
+    GRAPHGAMES_MAIL_SUBJECT_PREFIX = '[Graphgames]'
+    GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <graphgames@example.com>'
+    GRAPHGAMES = os.environ.get('FLASKY_ADMIN')
     SOCKET_IO_PORT = 5000
+    CELERY_BACKEND = os.environ.get('CELERY_BACKEND') or 'redis://localhost:6379'
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL') or 'redis://localhost:6379/0'
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND') or \
                             'redis://localhost:6379/0'
@@ -24,8 +25,6 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
 
-    GRAPHGAMES_MAIL_SUBJECT_PREFIX = '[Graphgames]'
-    GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <graphgames@example.com>'
     MAIL_SERVER = 'smtp.googlemail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
