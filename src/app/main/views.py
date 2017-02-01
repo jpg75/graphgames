@@ -9,7 +9,7 @@ from ..models import User, GameType, GameSession, Role, Move
 from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField
 from json import loads
-from ..tasks import download_task
+from ..tasks import download_task, replay_task
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -278,6 +278,9 @@ def replay_game_session(sid):
     s = GameSession.query.filter_by(id=sid).first()
     gt = GameType.query.filter_by(id=s.type).first()
     gt_struct = loads(gt.params)
-    gt_struct['replay'] = True  # set replay active
+    gt_struct['game_cfg']['replay'] = True  # set replay active
+
+    # here start the background thread for replay session:
+    # replay_task(url=config['CELERY_BACKEND'])
 
     return render_template(gt_struct['game_cfg']['html_file'])

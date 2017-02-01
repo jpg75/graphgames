@@ -11,7 +11,7 @@ class Config:
     GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <graphgames@example.com>'
     GRAPHGAMES = os.environ.get('FLASKY_ADMIN')
     SOCKET_IO_PORT = 5000
-    CELERY_BACKEND = os.environ.get('CELERY_BACKEND') or 'redis://localhost:6379'
+    CELERY_BACKEND = os.environ.get('CELERY_BACKEND') or 'redis://localhost:6379/0'
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL') or 'redis://localhost:6379/0'
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND') or \
                             'redis://localhost:6379/0'
