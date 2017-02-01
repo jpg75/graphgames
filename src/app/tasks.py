@@ -43,3 +43,16 @@ def download_task(sid):
     return response
 
 
+@celery.task
+def replay_task(url):
+    """
+    Generate a local web socket linked to the queue url. The task process is tied to this
+    communication link for its lifespan.
+    Takes all the element of a game session and sends back to the client the exact sequence of
+    events scheduling them with the exact timing.
+
+    :param url: A (Redis) queue url
+    :return:
+    """
+
+    pass
