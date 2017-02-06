@@ -281,6 +281,6 @@ def replay_game_session(sid):
     gt_struct['game_cfg']['replay'] = True  # set replay active
 
     # here start the background thread for replay session:
-    # replay_task(url=config['CELERY_BACKEND'])
+    # replay_task(url=config['CELERY_BACKEND'], sid)
 
     return render_template(gt_struct['game_cfg']['html_file'])
