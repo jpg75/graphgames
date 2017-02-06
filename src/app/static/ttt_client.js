@@ -18,6 +18,7 @@ let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
 let covered = null;  // whether or not covering cards
 let opponent_covered = false;
+let replay = false;  // support for replay of game sessions
 
 let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
@@ -294,7 +295,9 @@ function handleHand(message) {
 	console.log(cards);
 	console.log(covered);
 
-	window.alert("New hand");
+	if (not replay) {
+	    window.alert("New hand");
+	}
 	$.fx.off = true; // disable ALL animations
  			
 	jQuery.each(cards, function(i, val) {
