@@ -3,6 +3,8 @@ from . import celery
 from models import Move
 from csv import writer
 from io import BytesIO
+from flask_socketio import SocketIO
+from time import sleep
 
 
 def csv2string(data):
@@ -44,7 +46,7 @@ def download_task(sid):
 
 
 @celery.task
-def replay_task(url):
+def replay_task(url, sid):
     """
     Generate a local web socket linked to the queue url. The task process is tied to this
     communication link for its lifespan.
@@ -52,7 +54,19 @@ def replay_task(url):
     events scheduling them with the exact timing.
 
     :param url: A (Redis) queue url
+    :param sid: session ID
     :return:
     """
+    local_socket = SocketIO(message_queue=url)
+    # get all the session moves
+    moves = Move.query.filter_by(sid=sid).all()
+    schedules = []
+    i = 0
+    for move in moves[1:]:
+        c = move.ts - moves[i].ts
+        schedules.append(c.total_seconds())
+        local_socket.emit('replay', {'move': moves[i].mv})
+        sleep(c.total_seconds())
+        i += 1
 
     pass
