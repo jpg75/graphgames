@@ -60,11 +60,9 @@ def replay_task(url, sid):
     local_socket = SocketIO(message_queue=url)
     # get all the session moves
     moves = Move.query.filter_by(sid=sid).all()
-    schedules = []
     i = 0
     for move in moves[1:]:
         c = move.ts - moves[i].ts
-        schedules.append(c.total_seconds())
         local_socket.emit('replay', {'move': moves[i].mv})
         sleep(c.total_seconds())
         i += 1

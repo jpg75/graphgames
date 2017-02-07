@@ -10,17 +10,6 @@ from config import config
 from csv import writer
 from io import BytesIO
 
-bootstrap = Bootstrap()
-mail = Mail()
-moment = Moment()
-db = SQLAlchemy()
-
-socket_io = SocketIO()
-login_manager = LoginManager()
-login_manager.session_protection = 'strong'
-login_manager.login_view = 'auth.login'
-
-celery = None
 
 def csv2string(data):
     """
@@ -34,21 +23,50 @@ def csv2string(data):
     cw.writerow(data)
     return si.getvalue().strip('\r\n')
 
+bootstrap = Bootstrap()
+mail = Mail()
+moment = Moment()
+db = SQLAlchemy()
 
-def create_app(config_name):
-    global celery
+socket_io = SocketIO()
+login_manager = LoginManager()
+login_manager.session_protection = 'strong'
+login_manager.login_view = 'auth.login'
 
+
+def make_celery():
+    """
+    Generate a Celery instance, configures with the broker and sets the default parameters set
+    from Flask config.
+
+    :param app: web app handler
+    :return: a celery instance
+    """
+    celery = Celery()
+    TaskBase = celery.Task
+
+    class ContextTask(TaskBase):
+        abstract = True
+
+        def __call__(self, *args, **kwargs):
+            with app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+
+    celery.Task = ContextTask
+    return celery
+
+
+def create_app(cfg):
     app = Flask(__name__)
-    app.config.from_object(config[config_name])
+    app.config.from_object(config[cfg])
 
-    config[config_name].init_app(app)
+    config[cfg].init_app(app)
     bootstrap.init_app(app)
     mail.init_app(app)
     moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
     socket_io.init_app(app)
-    celery = make_celery(app)  # not very elegant!
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
@@ -65,26 +83,12 @@ def create_app(config_name):
 
     return app
 
+celery = make_celery()
+app = create_app(cfg='default')
+celery.config_from_object(config['celery'])
 
-def make_celery(app):
-    """
-    Generate a Celery instance, configures with the broker and sets the default parameters set
-    from Flask config.
 
-    :param app: web app handler
-    :return: a celery instance
-    """
-    celery = Celery(app.import_name, backend=app.config['CELERY_BACKEND'],
-                    broker=app.config['CELERY_BROKER_URL'])
-    celery.conf.update(app.config)
-    TaskBase = celery.Task
 
-    class ContextTask(TaskBase):
-        abstract = True
 
-        def __call__(self, *args, **kwargs):
-            with app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
 
-    celery.Task = ContextTask
-    return celery
+

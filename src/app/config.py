@@ -43,8 +43,18 @@ class ProductionConfig(DevelopmentConfig):
                                                           'data.sqlite')
 
 
+class CeleryConfig(object):
+    enable_utc = True
+    timezone = 'Europe/Rome'
+    result_backend = 'redis://localhost:6379/0'
+    broker_url = 'redis://localhost:6379/0'
+    #CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND') or \
+    #                        'redis://localhost:6379/0'
+
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
-    'default': DevelopmentConfig
+    'default': DevelopmentConfig,
+    'celery': CeleryConfig
 }

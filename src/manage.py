@@ -1,14 +1,13 @@
 #!/usr/bin/python
 
 import os
-from app import create_app, db, socket_io
+from app import db, socket_io, app
 from app.models import User, Role, Move, GameSession, GameType
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 
 cfg = os.getenv('FLASK_CONFIG') or 'default'
 
-app = create_app(cfg)
 manager = Manager(app)
 migrate = Migrate(app, db)
 
@@ -37,6 +36,7 @@ def populate():
     Role.inject_roles()
     User.inject_users()
     GameType.inject_game_types()
+
 
 
 if __name__ == '__main__':
