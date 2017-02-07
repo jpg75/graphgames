@@ -27,9 +27,10 @@ socket.on('connect', function() {
 
 socket.on('hand', handleHand);
 socket.on('gameover', function(){
-	window.alert('Session ended, Game Over.');
+	window.alert('Session ended or timed-out, Game Over.');
 });
 socket.on('toggle_players', handleTogglePlayers);
+socket.on('replay', handleReplay);
 
 
 $(document).ready(function () {
@@ -321,12 +322,35 @@ function handleHand(message) {
 
 /**
 * Handle the 'toggle_players' message and inverts the players. The player turn in managed by the
-server.
+* server.
 */
 function handleTogglePlayers() {
     invertPlayers($('#'+player));
     console.log("Switched to player: "+player);
     makeDraggable();
+}
+
+/**
+* Handle the reception of 'replay' messages. Each message contains the action to be replayed.
+* In case of TTT, an action can be the reception of a new hand or a specific move.
+* The message is a json encoded string of the actual action to reproduce.
+*/
+function handleReplay(message) {
+    replay = true;
+
+    if (message['hand'] != null) {
+        handleHand(message);
+    }
+    else {
+        handleMove();
+    }
+}
+
+/**
+* Handle the reproduction of a played move.
+*/
+function handleMove(message) {
+    console.log("Replaying move: "+message['move']);
 }
 
 /**
@@ -341,8 +365,3 @@ function sendMove(move, moved_card){
 		'moved_card': moved_card, 'goal_card': goalCard});
 }
 
-// graph decompositions, Diestel
-// Rasetti
-// Knoblock
-// abstracting the tower of hanoi
-// richard korf, rubik ; 1985
