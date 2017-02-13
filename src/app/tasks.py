@@ -5,6 +5,7 @@ from csv import writer
 from io import BytesIO
 from flask_socketio import SocketIO
 from time import sleep
+from json import loads
 
 
 def csv2string(data):
@@ -46,7 +47,7 @@ def download_task(sid):
 
 
 @celery.task
-def replay_task(url, sid):
+def replay_task(url, sid, struct):
     """
     Generate a local web socket linked to the queue url. The task process is tied to this
     communication link for its lifespan.
@@ -55,16 +56,35 @@ def replay_task(url, sid):
 
     :param url: A (Redis) queue url
     :param sid: session ID
+    :param struct: dictionary with game instance parameters
     :return:
     """
+    print "Replay Task started!"
     local_socket = SocketIO(message_queue=url)
     # get all the session moves
     moves = Move.query.filter_by(sid=sid).all()
     i = 0
+    # send all moves one by one
     for move in moves[1:]:
         c = move.ts - moves[i].ts
-        local_socket.emit('replay', {'move': moves[i].mv})
+        m = moves[i].mv
+        # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
+        # kind of move inside the DB. A refined version would be agnostic! In should send
+        # whatever found in DB entries, since each game is responsible to interpret its own data.
+        if m.startswith('HAND'):
+            hand = m.replace('HAND ', '')
+            local_socket.emit('replay', {'success': 'ok', 'hand': loads(hand),
+                                         'move': None,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+
+        else:
+            local_socket.emit('replay', {'success': 'ok', 'hand': None,
+                                         'move': m,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+
+        # local_socket.emit('replay', {'move': moves[i].mv})
         sleep(c.total_seconds())
         i += 1
 
-    pass

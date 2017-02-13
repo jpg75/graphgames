@@ -278,9 +278,9 @@ def replay_game_session(sid):
     s = GameSession.query.filter_by(id=sid).first()
     gt = GameType.query.filter_by(id=s.type).first()
     gt_struct = loads(gt.params)
-    gt_struct['game_cfg']['replay'] = True  # set replay active
+    gt_struct['replay'] = True  # set replay active
 
     # here start the background thread for replay session:
-    # replay_task(url=config['CELERY_BACKEND'], sid)
+    # replay_task.delay(url=config['CELERY_BACKEND'], sid, gt_struct)
 
-    return render_template(gt_struct['game_cfg']['html_file'])
+    return render_template(gt_struct['html_file'])

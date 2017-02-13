@@ -83,6 +83,7 @@ def create_app(cfg):
 
     return app
 
+
 celery = make_celery()
 app = create_app(cfg='default')
 celery.config_from_object(config['celery'])

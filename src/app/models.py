@@ -321,7 +321,11 @@ def test_connect():
 @socket_io.on('disconnect')
 @authenticated_only
 def test_disconnect():
-    user_d.pop(current_user.username, None)  # removed from the current playing users
+    user_d.pop(current_user.username, None)  # remov
+    # emit('hand', {'success': 'ok', 'hand': hand,
+    #                  'covered': session['game_cfg']['covered'],
+    #                  'opponent_covered': session['game_cfg']['opponent_covered']})ed from the
+    # current playing users
     print('Client disconnected', request.sid)
 
 
