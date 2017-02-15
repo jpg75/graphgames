@@ -140,14 +140,14 @@ function makeDraggable() {
 */ 
 function initCardsData(){
 	$('.card').each(function(index, el) {
-	    let key = $(this).find("[src!='static/card_back.png']").attr('src').slice(-6, -4);
+	    let key = $(this).find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
 	});
 
 	// set correct card into goal card GUI:
-	let gcfile = "static/" + goalCard + ".png";
+	let gcfile = "/static/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 	// UGLY! You can use Knockout.js for example
     $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: "+player+'</p></h5></div>');
@@ -208,7 +208,7 @@ function eventuallyToggleOpponent() {
     console.log('eventually toggle: '+player);
 	if (player == 'NK'){
 		let cardObj = $("#CK").children();
-		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
+		let viscard = cardObj.find("[src='/static/card_back.png']").css('display');
 			
 	    console.log('viscard: '+viscard);
 		if (viscard == 'none' && opponent_covered)
@@ -219,7 +219,7 @@ function eventuallyToggleOpponent() {
 
 	if (player == 'CK' && opponent_covered){
 		let cardObj = $("#NK").children();
-		let viscard = cardObj.find("[src='static/card_back.png']").css('display');
+		let viscard = cardObj.find("[src='/static/card_back.png']").css('display');
 		
 		console.log('viscard: '+viscard);
 		if (viscard == 'none' && opponent_covered)
@@ -239,7 +239,7 @@ function setCoveredCards() {
 			$("#" + card).css('border', '2px solid #333');  // resets the card-slot border as unmarked
 			if ( (card != 'GC') && (card != 'PL') ) {
 				let cardObj = $("#" + card).children();
-			 	let visibility = cardObj.find("[src='static/card_back.png']").css('display');
+			 	let visibility = cardObj.find("[src='/static/card_back.png']").css('display');
 
 				if (visibility == 'none' && val) // uncovered amd must be covered
 					cardObj.find('img').toggle();
