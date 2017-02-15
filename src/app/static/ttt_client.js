@@ -26,7 +26,7 @@ socket.on('connect', function() {
 });
 
 socket.on('hand', handleHand);
-socket.on('gameover', function(){
+socket.on('gameover', function() {
 	window.alert('Session ended or timed-out, Game Over.');
 });
 socket.on('toggle_players', handleTogglePlayers);
@@ -296,7 +296,7 @@ function handleHand(message) {
 	console.log(cards);
 	console.log(covered);
 
-	if (not replay) {
+	if (!replay) {
 	    window.alert("New hand");
 	}
 	$.fx.off = true; // disable ALL animations
@@ -337,12 +337,13 @@ function handleTogglePlayers() {
 */
 function handleReplay(message) {
     replay = true;
+    console.log("HandleREPLAY: "+message);
 
     if (message['hand'] != null) {
         handleHand(message);
     }
     else {
-        handleMove();
+        handleMove(message);
     }
 }
 
