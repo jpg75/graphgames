@@ -66,7 +66,8 @@ def create_app(cfg):
     moment.init_app(app)
     db.init_app(app)
     login_manager.init_app(app)
-    socket_io.init_app(app)
+    # socket_io.init_app(app, async_mode='eventlet', message_queue='redis://localhost:6379/0')
+    socket_io.init_app(app, message_queue='redis://localhost:6379/0')
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)

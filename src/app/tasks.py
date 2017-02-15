@@ -21,7 +21,7 @@ def csv2string(data):
     return si.getvalue().strip('\r\n')
 
 
-@celery.task
+@celery.task()
 def download_task(sid):
     """
     Extract all moves belonging to the provided sid and pack them in a csv format.
@@ -46,7 +46,7 @@ def download_task(sid):
     return response
 
 
-@celery.task
+@celery.task()
 def replay_task(url, sid, struct):
     """
     Generate a local web socket linked to the queue url. The task process is tied to this
@@ -60,14 +60,18 @@ def replay_task(url, sid, struct):
     :return:
     """
     print "Replay Task started!"
-    local_socket = SocketIO(message_queue=url)
+
     # get all the session moves
     moves = Move.query.filter_by(sid=sid).all()
+    print moves
+    print "Fetched %d moves" % len(moves)
+    local_socket = SocketIO(message_queue=url)
     i = 0
     # send all moves one by one
     for move in moves[1:]:
         c = move.ts - moves[i].ts
         m = moves[i].mv
+        print "Processing move: ", m
         # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
         # kind of move inside the DB. A refined version would be agnostic! In should send
         # whatever found in DB entries, since each game is responsible to interpret its own data.
@@ -77,14 +81,16 @@ def replay_task(url, sid, struct):
                                          'move': None,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
-
+            print "replaying: ", hand
         else:
             local_socket.emit('replay', {'success': 'ok', 'hand': None,
                                          'move': m,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
+            print "replaying: ", m
 
-        # local_socket.emit('replay', {'move': moves[i].mv})
         sleep(c.total_seconds())
         i += 1
 
+    local_socket.emit('gameover', {})  # end the game
+    print "Game over."
