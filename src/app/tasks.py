@@ -53,6 +53,8 @@ def replay_task(url, sid, struct):
     communication link for its lifespan.
     Takes all the element of a game session and sends back to the client the exact sequence of
     events scheduling them with the exact timing.
+    The code is verbose using print statements. They are visible through the celery worker
+    console in debug mode.
 
     :param url: A (Redis) queue url
     :param sid: session ID
@@ -92,5 +94,5 @@ def replay_task(url, sid, struct):
         sleep(c.total_seconds())
         i += 1
 
-    local_socket.emit('gameover', {})  # end the game
+    local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
     print "Game over."

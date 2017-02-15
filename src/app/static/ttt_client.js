@@ -26,11 +26,18 @@ socket.on('connect', function() {
 });
 
 socket.on('hand', handleHand);
-socket.on('gameover', function() {
-	window.alert('Session ended or timed-out, Game Over.');
+socket.on('gameover', function(message) {
+    console.log('Game over.');
+    if (message['comment']){
+        window.alert('Game Over: '+ message['comment']);
+    }
+	else {
+	    window.alert('Game Over: Session ended or timed-out');
+	}
 });
 socket.on('toggle_players', handleTogglePlayers);
 socket.on('replay', handleReplay);
+socket.on('set_replay', setReplay);
 
 
 $(document).ready(function () {
@@ -88,7 +95,7 @@ $(document).ready(function () {
 	});
 	  
 	function swap($el, fromPos, toPos, duration, callback) {
-		$el.css('position', 'absolute')
+		$el.css('position', 'relative')
         	.css(fromPos)
         	.animate(toPos, duration, function() {
             	if (callback) callback();
@@ -101,9 +108,6 @@ $(document).ready(function () {
 * current player is made enabled and emphasized.
 */
 function makeDraggable() {
-	// console.log('player: '+ player);
-	// console.log('opponent covered: '+ opponent_covered);
-
     $('.card').draggable({
     	disabled: true,
     	containment: '#content',
@@ -150,7 +154,7 @@ function initCardsData(){
 	let gcfile = "/static/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 	// UGLY! You can use Knockout.js for example
-    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: "+player+'</p></h5></div>');
+    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: " +player+'</p></h5></div>');
 }
 
 
@@ -159,18 +163,18 @@ function initCardsData(){
 */
 function checkMove($from, $fromP, $to, $toP){
 	let dest_slot = $toP.attr('id');
-	// console.log('id of destination: '+dest_slot);
+	// console.log('id of destination: ' + dest_slot);
  
 	let index = allowed_moving_zones.lastIndexOf(dest_slot);
 	if (index == -1) return false;
 
-	if (dest_slot == 'T'){
+	if (dest_slot == 'T') {
 		let $tcard = $('#T > .card');
 		let color_t = $tcard.data('color');
 		let number_t = $tcard.data('number');
 
-		console.log('player: '+player+' , pcolor: '+$from.data('color')+ ' - Tcolor: '+color_t+
-			' , pnumber: '+  $from.data('number')+ ' - Tnumber: '+number_t );
+		console.log('player: '+player+' , pcolor: ' + $from.data('color') + ' - Tcolor: '+ color_t +
+			' , pnumber: ' + $from.data('number') + ' - Tnumber: ' + number_t );
 
 		if (player == 'CK' && $from.data('color') == color_t) return true;
 		else if (player == 'NK' && $from.data('number') == number_t) return true;
@@ -184,7 +188,6 @@ function checkMove($from, $fromP, $to, $toP){
 * Make the current player card slot thicker and colored (red). 
 */
 function emphasizeActivePlayer() {
-    // console.log('emphasize: '+player);
 	$('#'+player).css('border', '2px solid red');
 }
 
@@ -206,11 +209,11 @@ function invertPlayers($fromParent) {
 */
 function eventuallyToggleOpponent() {
     console.log('eventually toggle: '+player);
-	if (player == 'NK'){
+	if (player == 'NK') {
 		let cardObj = $("#CK").children();
 		let viscard = cardObj.find("[src='/static/card_back.png']").css('display');
 			
-	    console.log('viscard: '+viscard);
+	    console.log('viscard: ' + viscard);
 		if (viscard == 'none' && opponent_covered)
 			cardObj.find('img').toggle();
 		else if (viscard == 'inline' && !opponent_covered)
@@ -331,13 +334,21 @@ function handleTogglePlayers() {
 }
 
 /**
+* Enable the replay mode in the client app.
+*/
+function setReplay(message) {
+    console.log('Replay mode ENABLED');
+    replay = true;
+}
+
+/**
 * Handle the reception of 'replay' messages. Each message contains the action to be replayed.
 * In case of TTT, an action can be the reception of a new hand or a specific move.
 * The message is a json encoded string of the actual action to reproduce.
 */
 function handleReplay(message) {
-    replay = true;
-    console.log("HandleREPLAY: "+message);
+    setReplay();
+    console.log("HandleREPLAY: " + message);
 
     if (message['hand'] != null) {
         handleHand(message);
@@ -351,7 +362,24 @@ function handleReplay(message) {
 * Handle the reproduction of a played move.
 */
 function handleMove(message) {
-    console.log("Replaying move: "+message['move']);
+    if (message['move'] == 'P')
+        passMove();
+    else {
+        console.log("Replaying move: "+message['move']);
+        let mv = message['move'];
+        // swap the current player card with the one in the position indicated by the move
+        // all over the html document
+        let pl_card = $('#' + player + ' > .card');
+        let move_card = $('#' + mv + ' > .card');
+        // card name, es: 2H
+        let pl_key = pl_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        let move_key = move_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        pl_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + move_key + '.png');
+        move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
+        score++;
+
+        makeDraggable();
+    }
 }
 
 /**

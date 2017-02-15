@@ -6,6 +6,7 @@ from . import main
 from .forms import BaseForm, GameTypeForm
 from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
+from ..config import config
 from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField
 from json import loads
@@ -259,7 +260,7 @@ def show_game(game_id):
     return render_template(session['game_cfg']['html_file'])
 
 
-@main.route('/<int:sid>')
+@main.route('/replay/<int:sid>')
 @authenticated_only
 def replay_game_session(sid):
     """
@@ -280,7 +281,10 @@ def replay_game_session(sid):
     gt_struct = loads(gt.params)
     gt_struct['replay'] = True  # set replay active
 
+    session['game_cfg'] = gt_struct
+    session['game_type'] = gt.id
+
     # here start the background thread for replay session:
-    # replay_task.delay(url=config['CELERY_BACKEND'], sid, gt_struct)
+    replay_task.delay(url='redis://localhost:6379/0', sid=sid, struct=gt_struct)
 
     return render_template(gt_struct['html_file'])

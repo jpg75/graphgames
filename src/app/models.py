@@ -270,10 +270,15 @@ def login(message):
     print "session ", session['game_cfg']
     print "session: ", session['game_type']
 
-    user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
-    user_d[current_user.username].purgelines()
+    if session['game_cfg']['replay']:
+        print "Client have to replay a session"
+        emit('set_replay', {})
 
-    serve_new_hand(current_user.username)
+    else:
+        user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
+        user_d[current_user.username].purgelines()
+
+        serve_new_hand(current_user.username)
 
 
 @socket_io.on('move')
