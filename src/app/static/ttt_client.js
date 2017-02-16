@@ -20,14 +20,14 @@ let covered = null;  // whether or not covering cards
 let opponent_covered = false;
 let replay = false;  // support for replay of game sessions
 
+/*
+* Handlers for network messages over socket-io (websockets)
+*/
 let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
 
-/*
-* Handlers for network messages over socket-io (websockets)
-*/
 socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
@@ -40,7 +40,7 @@ socket.on('gameover', function(message) {
 });
 socket.on('toggle_players', handleTogglePlayers);
 socket.on('replay', handleReplay);
-socket.on('set_replay', setReplay);
+socket.on('set_replay', handleSetReplay);
 
 
 $(document).ready(function () {
@@ -283,9 +283,6 @@ function passMove(){
 */
 function login() {
 	// console.log('Username: '+username);
-	if (replay)
-	    window.alert('Ready to replay session');
-
 	socket.emit('login', {'username': ''});
 }
 
@@ -308,7 +305,7 @@ function handleHand(message) {
 	if (!replay) {
 	    window.alert("New hand");
 	}
-	$.fx.off = true; // disable ALL animations
+	$.fx.off = true;  // disable ALL animations
  			
 	jQuery.each(cards, function(i, val) {
 		console.log(i+' '+val);
@@ -325,7 +322,7 @@ function handleHand(message) {
 	});
 
 	makeDraggable();
-	// $.fx.off = false; // enable ALL animations
+	// $.fx.off = false;  // enable ALL animations
 }
 
 
@@ -342,9 +339,12 @@ function handleTogglePlayers() {
 /**
 * Enable the replay mode in the client app.
 */
-function setReplay(message) {
+function handleSetReplay(message) {
     console.log('Replay mode ENABLED');
     replay = true;
+    window.alert('Ready to replay session');
+
+    socket.emit('replay_ready', {}); // notify the server we are ready
 }
 
 /**
@@ -353,7 +353,6 @@ function setReplay(message) {
 * The message is a json encoded string of the actual action to reproduce.
 */
 function handleReplay(message) {
-    setReplay();
     console.log("HandleREPLAY: " + message);
 
     if (message['hand'] != null) {
@@ -368,8 +367,10 @@ function handleReplay(message) {
 * Handle the reproduction of a played move.
 */
 function handleMove(message) {
-    if (message['move'] == 'P')  // PASS move
-        passMove();
+    if (message['move'] == 'P') {  // PASS move
+        score++;
+        handleTogglePlayers();
+    }
     else {
         console.log("Replaying move: "+message['move']);
         let mv = message['move'];

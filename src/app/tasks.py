@@ -30,7 +30,7 @@ def download_task(sid):
     :param sid:  the session id
     :return: http response object
     """
-    moves = mv.query.filter_by(sid=sid).all()
+    moves = Move.query.filter_by(sid=sid).all()
 
     # put column headers:
     s = csv2string(['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'PLAY_ROLE']) + '\n'
@@ -73,7 +73,7 @@ def replay_task(url, sid, struct):
     for move in moves[1:]:
         c = move.ts - moves[i].ts
         m = moves[i].mv
-        print "Processing move: ", m
+        # print "Processing move: ", m
         # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
         # kind of move inside the DB. A refined version would be agnostic! In should send
         # whatever found in DB entries, since each game is responsible to interpret its own data.
@@ -83,16 +83,27 @@ def replay_task(url, sid, struct):
                                          'move': None,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
-            print "replaying: ", hand
+            print "replaying: %s" % hand
         else:
             local_socket.emit('replay', {'success': 'ok', 'hand': None,
                                          'move': m,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
-            print "replaying: ", m
+            print "replaying: %s" % m
 
-        sleep(c.total_seconds())
+        fsec = c.total_seconds()
+        print "Waiting: %f seconds" % fsec
+        sleep(fsec)
         i += 1
+        print i
+        # send the last move:
+        if i == len(moves) - 1:
+            local_socket.emit('replay', {'success': 'ok', 'hand': None,
+                                         'move': moves[i].mv,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+            print "replaying: %s" % moves[i].mv
 
+    sleep(0.5)  # by default wait half second before quitting the game
     local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
     print "Game over."

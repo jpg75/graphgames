@@ -247,6 +247,20 @@ class GameType(db.Model):
         db.session.commit()
 
 
+@socket_io.on('replay_ready')
+@authenticated_only
+def replay_ready(message):
+    """
+    Called when 'replay_ready' message is received. The background task is spawned.
+
+    :return:
+    """
+    from tasks import replay_task
+
+    # here start the background thread for replay session:
+    replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+                      struct=session['game_cfg'])
+
 @socket_io.on('login')
 @authenticated_only
 def login(message):
@@ -274,11 +288,11 @@ def login(message):
         print "Client have to replay a session"
         emit('set_replay', {})
 
-        from tasks import replay_task
+        # from tasks import replay_task
 
         # here start the background thread for replay session:
-        replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
-                          struct=session['game_cfg'])
+        # replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+        #                   struct=session['game_cfg'])
 
     else:
         user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
