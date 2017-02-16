@@ -25,6 +25,9 @@ socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
 
+/*
+* Handlers for network messages over socket-io (websockets)
+*/
 socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
@@ -280,6 +283,9 @@ function passMove(){
 */
 function login() {
 	// console.log('Username: '+username);
+	if (replay)
+	    window.alert('Ready to replay session');
+
 	socket.emit('login', {'username': ''});
 }
 
@@ -362,7 +368,7 @@ function handleReplay(message) {
 * Handle the reproduction of a played move.
 */
 function handleMove(message) {
-    if (message['move'] == 'P')
+    if (message['move'] == 'P')  // PASS move
         passMove();
     else {
         console.log("Replaying move: "+message['move']);
@@ -378,7 +384,7 @@ function handleMove(message) {
         move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
         score++;
 
-        makeDraggable();
+        handleTogglePlayers();
     }
 }
 

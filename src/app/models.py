@@ -274,6 +274,12 @@ def login(message):
         print "Client have to replay a session"
         emit('set_replay', {})
 
+        from tasks import replay_task
+
+        # here start the background thread for replay session:
+        replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+                          struct=session['game_cfg'])
+
     else:
         user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
         user_d[current_user.username].purgelines()

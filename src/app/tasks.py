@@ -30,7 +30,7 @@ def download_task(sid):
     :param sid:  the session id
     :return: http response object
     """
-    moves = Move.query.filter_by(sid=sid).all()
+    moves = mv.query.filter_by(sid=sid).all()
 
     # put column headers:
     s = csv2string(['MOVE', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'PLAY_ROLE']) + '\n'

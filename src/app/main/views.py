@@ -6,11 +6,11 @@ from . import main
 from .forms import BaseForm, GameTypeForm
 from .. import db, csv2string
 from ..models import User, GameType, GameSession, Role, Move
-from ..config import config
-from ..decorators import authenticated_only, admin_required
+# from ..config import config
+from ..decorators import authenticated_only
 from wtforms import SelectField, SubmitField
 from json import loads
-from ..tasks import download_task, replay_task
+from ..tasks import download_task
 
 
 @main.route('/', methods=['GET', 'POST'])
@@ -283,8 +283,9 @@ def replay_game_session(sid):
 
     session['game_cfg'] = gt_struct
     session['game_type'] = gt.id
+    session['game_session'] = sid
 
     # here start the background thread for replay session:
-    replay_task.delay(url='redis://localhost:6379/0', sid=sid, struct=gt_struct)
+    # replay_task.delay(url='redis://localhost:6379/0', sid=sid, struct=gt_struct)
 
     return render_template(gt_struct['html_file'])
