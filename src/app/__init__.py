@@ -9,6 +9,8 @@ from flask_socketio import SocketIO
 from config import config
 from csv import writer
 from io import BytesIO
+from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
+from time import time, localtime
 
 
 def csv2string(data):
@@ -23,6 +25,7 @@ def csv2string(data):
     cw.writerow(data)
     return si.getvalue().strip('\r\n')
 
+
 bootstrap = Bootstrap()
 mail = Mail()
 moment = Moment()
@@ -32,6 +35,26 @@ socket_io = SocketIO()
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
 login_manager.login_view = 'auth.login'
+
+
+def make_zip(file_list):
+    """
+    Generate an in-memory zip file populated with the content specified in the argument.
+
+    :param file_list: a list of dictionaries holding the name ('file_name' field) and content (
+                        'file_data' field) for each sub-file of the zip
+    :return: a memory file handler
+    """
+    memory_file = BytesIO()
+    with ZipFile(memory_file, 'w') as zf:
+        for afile in file_list:
+            d = ZipInfo(afile['file_name'])
+            d.date_time = localtime(time())[:6]
+            d.compress_type = ZIP_DEFLATED
+            zf.writestr(d, afile['file_data'])  # write content on file descriptor
+
+    memory_file.seek(0)
+    return memory_file
 
 
 def make_celery():
@@ -88,9 +111,3 @@ def create_app(cfg):
 celery = make_celery()
 app = create_app(cfg='default')
 celery.config_from_object(config['celery'])
-
-
-
-
-
-

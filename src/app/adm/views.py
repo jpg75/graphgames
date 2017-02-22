@@ -1,9 +1,9 @@
 # from OpenSSL.SSL import Session
-from flask import render_template, redirect, url_for, flash, request, make_response
+from flask import render_template, redirect, url_for, flash, request, make_response, send_file
 from flask_login import current_user, login_required
 from . import adm
 from ..main.forms import BaseForm, GameTypeForm
-from .. import db, csv2string
+from .. import db, csv2string, make_zip
 from ..models import User, GameType, GameSession, Role, Move, SHOE_FILE_ORDER
 # from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField, BooleanField
@@ -18,13 +18,12 @@ def aggregate_moves(moves, sids):
 
     for move in moves:
         if move.mv.startswith('HAND'):
-            if not move.mv in unique_hands:
-                d = loads(move.mv.replace('HAND',''))
-                current_hand = ' '.join(d[x] for x in FILE_ORDER)
+            d = loads(move.mv.replace('HAND', ''))
+            current_hand = ' '.join(d[x] for x in FILE_ORDER)
+            if not current_hand in unique_hands:
+                # print "current hand:",current_hand
                 unique_hands.append(current_hand)
-                # current_hand = move.mv
             else:
-                d = loads(move.mv.replace('HAND',''))
                 current_hand = ' '.join(d[x] for x in FILE_ORDER)
         else:
             if current_hand in sid_data[str(move.sid)]:  # hand exists for this sid
@@ -73,39 +72,27 @@ def session_admin():
 
         data, hands = aggregate_moves(moves, sids)
 
-        headers = ['HAND']
-        for s in sids:
-            headers.append('SID_' + s)
-
-        s = csv2string(headers) + '\n'
-        # s = csv2string(
-        #     ['HAND', 'TIMESTAMP', 'MOVE_ID', 'USER_ID', 'SESSION_ID', 'PLAY_ROLE']) + '\n'
-        # for move in moves:
-        #    s = s + csv2string([move.mv, move.ts, move.id, move.uid, move.sid, move.play_role]) + \
-        #        '\n'
-
-        line = []
+        line = ''
         for h in hands:
-            line.append(h)
+            line += h + '\n\n'
             for sid in sids:
                 if h in data[sid]:
-                    line.append(''.join(data[sid][h]))
+                    line += ''.join(data[sid][h]) + '\n'
                 else:
-                    line.append('NA')
+                    line += 'NA\n'
+            line += '\n'
 
-            s = s + csv2string(line) + '\n'
-            line[:] = []
+        files = [{'file_name': 'aggregated_output.txt',
+                  'file_data': line
+                  },
+                 {'file_name': 'aggregated_output_companion.txt',
+                  'file_data': '\n'.join(sids)
+                  }]
 
-        print s
+        zf = make_zip(files)
+        return send_file(zf, attachment_filename='aggregated_output.zip',
+                         as_attachment=True)
 
-        response = make_response(s)
-        response.headers["Content-Disposition"] = "attachment; filename=moves_data.csv"
-
-        # flash('File download is going to start shortly.')
-        return response
-
-    # print "form: ", form.data
-    # print "sessions: ", ss
     return render_template('adm/session_admin.html', form=form, data=ss)
 
 

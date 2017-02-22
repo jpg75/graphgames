@@ -71,6 +71,7 @@ class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
+    # description = db.Column(db.String(255))
     default = db.Column(db.Boolean, default=True, index=True)
 
     users = db.relationship('User', backref='role')
@@ -108,13 +109,28 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
     username = db.Column(db.String(64), unique=True, index=True)
-    password_hash = db.Column(db.String(128))
-    confirmed = db.Column(db.Boolean, default=False)
+    password_hash = db.Column(db.String(128))  # should be 'password'
+    confirmed = db.Column(db.Boolean, default=False)  # should be 'active'
+
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+
+    # enables Confirmable:
+    # confirmed_at = db.Column(db.DateTime())
+
+    # enables Trackable:
+    # last_login_at = db.Column(db.DateTime())
+    # current_login_at = db.Column(db.DateTime())
+    # last_login_ip = db.Column(db.String(20))
+    # current_login_ip = db.Column(db.String(20))
+    # login_count = db.Column(db.Integer, default=0)
+
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
 
     moves = db.relationship('Move', backref='user', lazy='dynamic')
+
+    # roles = db.relationship('Role', secondary=roles_users,
+    #                        backref=db.backref('users', lazy='dynamic'))
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -260,6 +276,7 @@ def replay_ready(message):
     # here start the background thread for replay session:
     replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
                       struct=session['game_cfg'])
+
 
 @socket_io.on('login')
 @authenticated_only
