@@ -27,7 +27,6 @@ let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
-
 socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
@@ -298,7 +297,7 @@ function handleHand(message) {
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
 
-	console.log('handlehand opponent_covered: '+ opponent_covered);
+	console.log('handlehand opponent_covered: ' + opponent_covered);
 	console.log(cards);
 	console.log(covered);
 
@@ -307,17 +306,22 @@ function handleHand(message) {
 	}
 	$.fx.off = true;  // disable ALL animations
  			
-	jQuery.each(cards, function(i, val) {
-		console.log(i+' '+val);
+	jQuery.each(cards, function(card, val) {
+		console.log(card + ' ' + val);
 
-		if (i == 'GC') {  // set goal card
+		if (card == 'GC') {  // set goal card
 			goalCard = val;
 		}
-		else if (i == 'PL') {  // set player turn
-		    /* NOTE: ths is the only case in which we call invertPlayers directly since we do not
+		else if (card == 'PL') {  // set player turn
+		    /* NOTE: ths is the only case (in play mode) in which we call invertPlayers directly
+		    since we do not
 		    receive a 'toggle_players' message after a move that closes the current hand */
 		    if (val != player)
-		        invertPlayers($("#"+i));  // NEVER touch player var directly!
+		        invertPlayers($("#" + card));  // NEVER touch player var directly!
+		}
+		else {
+		    // each card is updated with the corresponding figure:
+		    $("#" + card).find("[src!='/static/card_back.png']").attr('src', '/static/' + val +'.png');
 		}
 	});
 
@@ -368,6 +372,7 @@ function handleReplay(message) {
 */
 function handleMove(message) {
     if (message['move'] == 'P') {  // PASS move
+        console.log("Replaying move: " + message['move']);
         score++;
         handleTogglePlayers();
     }
@@ -381,6 +386,9 @@ function handleMove(message) {
         // card name, es: 2H
         let pl_key = pl_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
         let move_key = move_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        console.log("player card key: "+pl_key);
+        console.log("to be moved card key: "+move_key);
+
         pl_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + move_key + '.png');
         move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
         score++;
