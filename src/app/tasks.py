@@ -73,6 +73,7 @@ def replay_task(url, sid, struct):
     for move in moves[1:]:
         c = move.ts - moves[i].ts
         m = moves[i].mv
+        fsec = c.total_seconds()
         # print "Processing move: ", m
         # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
         # kind of move inside the DB. A refined version would be agnostic! In should send
@@ -80,30 +81,33 @@ def replay_task(url, sid, struct):
         if m.startswith('HAND'):
             hand = m.replace('HAND ', '')
             local_socket.emit('replay', {'success': 'ok', 'hand': loads(hand),
+                                         'next_move_at': fsec,
                                          'move': None,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
             print "replaying: %s" % hand
         else:
             local_socket.emit('replay', {'success': 'ok', 'hand': None,
+                                         'next_move_at': fsec,
                                          'move': m,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
             print "replaying: %s" % m
 
-        fsec = c.total_seconds()
         print "Waiting: %f seconds" % fsec
         sleep(fsec)
         i += 1
         print i
         # send the last move:
         if i == len(moves) - 1:
+            print "send last move!"
             local_socket.emit('replay', {'success': 'ok', 'hand': None,
                                          'move': moves[i].mv,
+                                         'next_move_at': fsec,
                                          'covered': struct['covered'],
                                          'opponent_covered': struct['opponent_covered']})
             print "replaying: %s" % moves[i].mv
 
-    sleep(0.5)  # by default wait half second before quitting the game
+    sleep(5.0)  # by default wait half second before quitting the game
     local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
     print "Game over."

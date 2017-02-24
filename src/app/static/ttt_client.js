@@ -358,6 +358,9 @@ function handleSetReplay(message) {
 */
 function handleReplay(message) {
     console.log("HandleREPLAY: " + message);
+    // Showing the delay for the next expected move
+    $('#replay_delay').replaceWith('<div id="replay_delay"><h5><p>Next move in:
+    ' + message['next_move_at'] + "seconds</p></h5></div>');
 
     if (message['hand'] != null) {
         handleHand(message);
