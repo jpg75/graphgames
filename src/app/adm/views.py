@@ -58,7 +58,9 @@ def session_admin():
         pass
 
     ss = GameSession.query.all()
+    sd = {x.id: x for x in ss}
     for gs in ss:
+        print "adding field %d in form " % gs.id
         field = BooleanField()
         F.append_field(str(gs.id), field)
 
@@ -93,7 +95,7 @@ def session_admin():
         return send_file(zf, attachment_filename='aggregated_output.zip',
                          as_attachment=True)
 
-    return render_template('adm/session_admin.html', form=form, data=ss)
+    return render_template('adm/session_admin.html', form=form, data=sd)
 
 
 @adm.route('/user_admin')

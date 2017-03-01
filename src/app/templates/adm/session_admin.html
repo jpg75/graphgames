@@ -35,19 +35,19 @@
                 {% if item.type=="BooleanField" %}
                 <tr>
                     <td>
-                        {{item}} {{data[(item.name|int)-1]['id']}}
+                        {{item}} {{ data[(item.name|int)]['id'] }}
                     </td>
                     <td>
-                        {{data[(item.name|int)-1]['uid']}}
+                        {{data[(item.name|int)]['uid']}}
                     </td>
                     <td>
-                        {{data[(item.name|int)-1]['type']}}
+                        {{data[(item.name|int)]['type']}}
                     </td>
                     <td>
-                        {{data[(item.name|int)-1]['start']}}
+                        {{data[(item.name|int)]['start']}}
                     </td>
                     <td>
-                        {{data[(item.name|int)-1]['end']}}
+                        {{data[(item.name|int)]['end']}}
                     </td>
                     <td>
                         <a class="btn btn-primary"
@@ -63,5 +63,6 @@
         {% endif %}
         </p></h3>
 </div>
+
 
 {% endblock %}
