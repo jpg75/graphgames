@@ -2,7 +2,8 @@
 
 import os
 from flask import url_for
-from app import db, socket_io, app, admin, UserAdminView, MyMoveAdminView, \
+from app import db, socket_io, app, admin
+from app.views import  UserAdminView, MyMoveAdminView, \
     GameTypeAdminView, SessionAdminView, GGFileAdmin
 from app.models import User, Role, Move, GameSession, GameType, user_datastore, \
     init_db
