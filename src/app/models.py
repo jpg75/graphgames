@@ -1,10 +1,6 @@
 from . import db, socket_io
-# from werkzeug.security import generate_password_hash, check_password_hash
-from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore, login_required, \
-    current_user
+from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore, current_user
 from flask_security.utils import encrypt_password
-from flask_login import AnonymousUserMixin
-# from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request, session
 from datetime import datetime
 from flask_socketio import emit
@@ -15,11 +11,6 @@ from json import dumps
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 user_d = dict()  # maps user names to Session objects
-
-
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(int(user_id))
 
 
 def loadFile(fqn_file):
@@ -69,11 +60,12 @@ class Configuration(object):
     def listParams(self):
         return self._data.keys()
 
+
 """Many to many relationship: a user can have many roles and vice-versa"""
 roles_users = db.Table(
-     'roles_users',
-     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
-     db.Column('role_id', db.Integer, db.ForeignKey('roles.id')))
+    'roles_users',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id')))
 
 
 class Role(db.Model, RoleMixin):
@@ -118,12 +110,6 @@ class User(UserMixin, db.Model):
         return True if 'admin' in self.roles else False
 
 
-# class AnonymousUser(AnonymousUserMixin):
-#     def is_administrator(self):
-#         return False
-#
-#
-# login_manager.anonymous_user = AnonymousUser
 user_datastore = SQLAlchemyUserDatastore(db, User, Role)
 
 
@@ -200,10 +186,11 @@ class GameType(db.Model):
                                      'opponent_covered': True,
                                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                                                  'CK': False, 'T': False}}),
-                 'Small TTT Solo Uncovered': ({'html_file': 'admin/games/ttt-page.html', 'shoe_file':
+                 'Small TTT Solo Uncovered': (
+                 {'html_file': 'admin/games/ttt-page.html', 'shoe_file':
                      'game422-small.txt', 'opponent_covered': False, 'replay': False,
-                                               'covered': {'NK': False, 'N': True, 'U': False,
-                                                           'C': True, 'CK': False, 'T': False}})
+                  'covered': {'NK': False, 'N': True, 'U': False,
+                              'C': True, 'CK': False, 'T': False}})
                  }
 
         for t in types:
@@ -276,7 +263,6 @@ def move(message):
     print "received move: ", message['move']
     print current_user
     print current_user.id
-    # print current_user.email
     print current_user.email
     # It actually generates the timestamp now!
     m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
