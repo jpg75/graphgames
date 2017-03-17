@@ -1,7 +1,10 @@
-from . import db, socket_io, login_manager
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin, AnonymousUserMixin, current_user
-from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+from . import db, socket_io
+# from werkzeug.security import generate_password_hash, check_password_hash
+from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore, login_required, \
+    current_user
+from flask_security.utils import encrypt_password
+from flask_login import AnonymousUserMixin
+# from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from flask import current_app, request, session
 from datetime import datetime
 from flask_socketio import emit
@@ -14,9 +17,9 @@ SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 user_d = dict()  # maps user names to Session objects
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+# @login_manager.user_loader
+# def load_user(user_id):
+#     return User.query.get(int(user_id))
 
 
 def loadFile(fqn_file):
@@ -66,141 +69,90 @@ class Configuration(object):
     def listParams(self):
         return self._data.keys()
 
+"""Many to many relationship: a user can have many roles and vice-versa"""
+roles_users = db.Table(
+     'roles_users',
+     db.Column('user_id', db.Integer, db.ForeignKey('users.id')),
+     db.Column('role_id', db.Integer, db.ForeignKey('roles.id')))
 
-class Role(db.Model):
+
+class Role(db.Model, RoleMixin):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    # description = db.Column(db.String(255))
-    default = db.Column(db.Boolean, default=True, index=True)
-
-    users = db.relationship('User', backref='role')
+    description = db.Column(db.String(255))
 
     def __repr__(self):
-        return '<Role %r>' % self.name
-
-    @staticmethod
-    def inject_roles():
-        roles = {'User': True,
-                 'Administrator': False}
-
-        for r in roles:
-            role = Role.query.filter_by(name=r).first()
-            if role is None:
-                role = Role(name=r)
-            role.default = roles[r]
-            db.session.add(role)
-        db.session.commit()
-
-    @staticmethod
-    def opposite_role(role):
-        if role == 'Administrator':
-            return u'User'
-        else:
-            return u'Administrator'
-
-    @staticmethod
-    def role_id_from_name(name):
-        return 1 if name == 'Administrator' else 2
+        return self.name
 
 
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), unique=True, index=True)
-    username = db.Column(db.String(64), unique=True, index=True)
-    password_hash = db.Column(db.String(128))  # should be 'password'
-    confirmed = db.Column(db.Boolean, default=False)  # should be 'active'
-
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    password = db.Column(db.String())  # should be 'password'
+    active = db.Column(db.Boolean, default=False)  # should be 'active'
 
     # enables Confirmable:
-    # confirmed_at = db.Column(db.DateTime())
+    confirmed_at = db.Column(db.DateTime())
 
     # enables Trackable:
-    # last_login_at = db.Column(db.DateTime())
-    # current_login_at = db.Column(db.DateTime())
-    # last_login_ip = db.Column(db.String(20))
-    # current_login_ip = db.Column(db.String(20))
-    # login_count = db.Column(db.Integer, default=0)
+    last_login_at = db.Column(db.DateTime())
+    current_login_at = db.Column(db.DateTime())
+    last_login_ip = db.Column(db.String(20))
+    current_login_ip = db.Column(db.String(20))
+    login_count = db.Column(db.Integer, default=0)
 
     member_since = db.Column(db.DateTime(), default=datetime.utcnow)
     last_seen = db.Column(db.DateTime(), default=datetime.utcnow)
 
     moves = db.relationship('Move', backref='user', lazy='dynamic')
 
-    # roles = db.relationship('Role', secondary=roles_users,
-    #                        backref=db.backref('users', lazy='dynamic'))
-
-    def __init__(self, **kwargs):
-        super(User, self).__init__(**kwargs)
-        # Any new user created by the GUI has no adm privileges:
-        if self.role is None:
-            if self.username == 'adm':
-                self.role = Role.query.filter_by(name='Administrator').first()
-            else:
-                self.role = Role.query.filter_by(default=True).first()
+    roles = db.relationship('Role', secondary=roles_users,
+                            backref=db.backref('users', lazy='dynamic'))
 
     def __repr__(self):
-        return '<User %r>' % self.username
+        return self.email
 
     def is_administrator(self):
-        return True if self.role.name == 'Administrator' else False
+        return True if 'admin' in self.roles else False
 
-    def ping(self):
-        self.last_seen = datetime.utcnow()
-        db.session.add(self)
+
+# class AnonymousUser(AnonymousUserMixin):
+#     def is_administrator(self):
+#         return False
+#
+#
+# login_manager.anonymous_user = AnonymousUser
+user_datastore = SQLAlchemyUserDatastore(db, User, Role)
+
+
+def init_db():
+    with current_app.app_context():
+        db.create_all()
+
+        default_role = user_datastore.find_or_create_role(
+            'user', description="Simple user")
+        adm_role = user_datastore.find_or_create_role(
+            'admin', description="System administrator: has no limits")
+
+        if not User.query.first():
+            u = user_datastore.create_user(
+                email='admin@graphgames.com',
+                password=encrypt_password('adminpw'))
+            user_datastore.add_role_to_user(
+                u, adm_role)
+
+            u = user_datastore.create_user(
+                email='gp.jesi@gmail.com',
+                password=encrypt_password('pippo'))
+            user_datastore.add_role_to_user(
+                u, default_role)
+
         db.session.commit()
 
-    @property
-    def password(self):
-        raise AttributeError('password is not a readable attribute')
-
-    @password.setter
-    def password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def verify_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-    def generate_confirmation_token(self, expiration=3600):
-        s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'confirm': self.id})
-
-    def confirm(self, token):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token)
-        except:
-            return False
-        if data.get('confirm') != self.id:
-            return False
-        self.confirmed = True
-        db.session.add(self)
-        return True
-
-    @staticmethod
-    def inject_users():
-        # NOTE: Change adm passwords asap!
-        users = {'gp.jesi@gmail.com': ('gp.jesi', 'pippo', 'User'),
-                 'adm@graphgames.org': ('adm', 'adminpw', 'Administrator')
-                 }
-
-        for u in users:
-            user = User.query.filter_by(email=u).first()
-            if user is None:
-                role = 1 if (users[u][2] == 'Administrator') else 2
-                user = User(email=u, username=users[u][0], password=users[u][1], role_id=role)
-                db.session.add(user)
-        db.session.commit()
-
-
-class AnonymousUser(AnonymousUserMixin):
-    def is_administrator(self):
-        return False
-
-
-login_manager.anonymous_user = AnonymousUser
+        if not GameType.query.first():
+            GameType.inject_game_types()
 
 
 class Move(db.Model):
@@ -242,12 +194,13 @@ class GameType(db.Model):
     def inject_game_types():
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
-        types = {'Small TTT Solo': ({'html_file': 'ttt-page.html', 'shoe_file': 'game422-small.txt',
+        types = {'Small TTT Solo': ({'html_file': 'admin/games/ttt-page.html', 'shoe_file':
+            'game422-small.txt',
                                      'replay': False,
                                      'opponent_covered': True,
                                      'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                                                  'CK': False, 'T': False}}),
-                 'Small TTT Solo Uncovered': ({'html_file': 'ttt-page.html', 'shoe_file':
+                 'Small TTT Solo Uncovered': ({'html_file': 'admin/games/ttt-page.html', 'shoe_file':
                      'game422-small.txt', 'opponent_covered': False, 'replay': False,
                                                'covered': {'NK': False, 'N': True, 'U': False,
                                                            'C': True, 'CK': False, 'T': False}})
@@ -305,17 +258,11 @@ def login(message):
         print "Client have to replay a session"
         emit('set_replay', {})
 
-        # from tasks import replay_task
-
-        # here start the background thread for replay session:
-        # replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
-        #                   struct=session['game_cfg'])
-
     else:
-        user_d[current_user.username] = Configuration(config_file=session['game_cfg']['shoe_file'])
-        user_d[current_user.username].purgelines()
+        user_d[current_user.email] = Configuration(config_file=session['game_cfg']['shoe_file'])
+        user_d[current_user.email].purgelines()
 
-        serve_new_hand(current_user.username)
+        serve_new_hand(current_user.email)
 
 
 @socket_io.on('move')
@@ -329,7 +276,7 @@ def move(message):
     print "received move: ", message['move']
     print current_user
     print current_user.id
-    print current_user.username
+    # print current_user.email
     print current_user.email
     # It actually generates the timestamp now!
     m = Move(uid=current_user.id, sid=session['game_session'], mv=message['move'],
@@ -363,16 +310,13 @@ def test_connect():
 @socket_io.on('disconnect')
 @authenticated_only
 def test_disconnect():
-    user_d.pop(current_user.username, None)  # remov
-    # emit('hand', {'success': 'ok', 'hand': hand,
-    #                  'covered': session['game_cfg']['covered'],
-    #                  'opponent_covered': session['game_cfg']['opponent_covered']})ed from the
-    # current playing users
+    user_d.pop(current_user.email, None)  # remove user from connected users
+
     print('Client disconnected', request.sid)
 
 
 def serve_new_hand(username):
-    s = user_d[current_user.username]
+    s = user_d[current_user.email]
     if len(s.content) > 0:
         hand = s.content.pop(0)
         hand = hand.upper()

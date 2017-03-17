@@ -6,7 +6,7 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>Hello {% if current_user.is_authenticated %}{{ current_user.username
+    <h1>Hello {% if current_user.is_authenticated %}{{ current_user.email
         }}, welcome back!</h1>
 
     <h1><p>Please, choose a game:</p>
@@ -19,8 +19,9 @@
     {% else %} Stranger !
     </h1>
     <h1>
-        <p>Please login/register to play our game(s).</p>
-        <p><a href="{{ url_for('auth.login') }}">Log In</a></p>
+        <p>Please login/register to play our games.</p>
+        <p><a href="{{ url_for('security.login') }}">Log In</a></p>
+        <p><a href="{{ url_for('security.register') }}">Register</a></p>
     </h1>
     {% endif %}
 

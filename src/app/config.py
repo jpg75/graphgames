@@ -8,8 +8,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'itsasecret!'
     SECURITY_PASSWORD_HASH = 'bcrypt'
     SECURITY_PASSWORD_SALT = SECRET_KEY
-    SECURITY_CONFIRMABLE = True
+    SECURITY_CONFIRMABLE = False
     SECURITY_TRACKABLE = True
+    SECURITY_REGISTERABLE = True
+    SECURITY_SEND_REGISTER_EMAIL = False
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     GRAPHGAMES_MAIL_SUBJECT_PREFIX = '[Graphgames]'
     GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <do_not_reply@graphgames.com>'

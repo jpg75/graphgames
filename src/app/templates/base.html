@@ -1,5 +1,4 @@
 {% extends "bootstrap/base.html" %}
-
 {% block title %}Graphgames{% endblock %}
 
 {% block head %}
@@ -28,7 +27,7 @@
                 <li><a href="/">Home</a></li>
                 {% if current_user.is_authenticated %}
                 <li>
-                    <a href="{{ url_for('main.sessions', username=current_user.username) }}">
+                    <a href="{{ url_for('main.sessions', username=current_user.email) }}">
                         Sessions
                     </a>
                 </li>
@@ -49,10 +48,10 @@
             <ul class="nav navbar-nav navbar-right">
                 {% if current_user.is_authenticated %}
                 <li>
-                    <a href="{{ url_for('auth.logout') }}">User: {{current_user.username}} - Log
+                    <a href="{{ url_for('auth.logout') }}">User: {{current_user.email}} - Log
                         Out</a></li>
                 {% else %}
-                <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
+                <li><a href="{{ url_for('security.login') }}">Log In</a></li>
                 {% endif %}
             </ul>
         </div>

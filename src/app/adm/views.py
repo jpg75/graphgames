@@ -5,7 +5,6 @@ from . import adm
 from ..main.forms import BaseForm, GameTypeForm
 from .. import db, csv2string, make_zip
 from ..models import User, GameType, GameSession, Role, Move, SHOE_FILE_ORDER
-# from ..decorators import authenticated_only, admin_required
 from wtforms import SelectField, SubmitField, BooleanField
 from json import loads
 
@@ -60,7 +59,6 @@ def session_admin():
     ss = GameSession.query.all()
     sd = {x.id: x for x in ss}
     for gs in ss:
-        print "adding field %d in form " % gs.id
         field = BooleanField()
         F.append_field(str(gs.id), field)
 
@@ -110,8 +108,8 @@ def user_admin():
 
     users = User.query.all()
     for user in users:
-        print user.username
-        field = SelectField(user.username, choices=[(user.role.name, user.role.name),
+        print user.email
+        field = SelectField(user.email, choices=[(user.role.name, user.role.name),
                                                     (Role.opposite_role(user.role.name),
                                                      Role.opposite_role(user.role.name))
                                                     ])

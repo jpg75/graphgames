@@ -5,7 +5,7 @@
 {% block page_content %}
 
 <div class="page-header">
-    <h1>{{ current_user.username }}</h1>
+    <h1>User: {{ current_user.email }}</h1>
 
     {% if current_user.is_administrator() %}
     <p>This user has administrative privileges.</p>
@@ -14,7 +14,8 @@
 
     <p>
         Member since {{ moment(current_user.member_since).format('L') }}.
-        Last seen {{ moment(current_user.last_seen).fromNow() }}.
+        Last seen {{ moment(current_user.last_login_at).fromNow() }}.
+        Last seen from IP: {{current_user.last_login_ip}}.
     </p>
 </div>
 {% endblock %}

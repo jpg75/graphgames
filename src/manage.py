@@ -1,15 +1,51 @@
 #!/usr/bin/python
 
 import os
-from app import db, socket_io, app
-from app.models import User, Role, Move, GameSession, GameType
+from flask import url_for
+from app import db, socket_io, app, admin, UserAdminView, MyMoveAdminView, \
+    GameTypeAdminView, SessionAdminView, GGFileAdmin
+from app.models import User, Role, Move, GameSession, GameType, user_datastore, \
+    init_db
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
+from flask_security import Security, user_registered
+from flask_admin import helpers as admin_helpers
 
 cfg = os.getenv('FLASK_CONFIG') or 'default'
 
 manager = Manager(app)
 migrate = Migrate(app, db)
+
+security = Security(app, user_datastore)
+
+
+# assign the default role 'user' when a new user registers
+@user_registered.connect_via(app)
+def user_registered_sighandler(app, user, confirm_token):
+    default_role = user_datastore.find_role("user")
+    user_datastore.add_role_to_user(user, default_role)
+    db.session.commit()
+
+
+admin.add_view(MyMoveAdminView(Move, db.session, name='My moves'))
+admin.add_view(UserAdminView(User, db.session, name='Users'))
+admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
+admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
+
+path = os.path.join(os.path.dirname(__file__), 'data')
+admin.add_view(GGFileAdmin(path, '/data/', name='Data files'))
+
+
+# define a context processor for merging flask-admin's template context into the
+# flask-security views.
+@security.context_processor
+def security_context_processor():
+    return dict(
+        admin_base_template=admin.base_template,
+        admin_view=admin.index_view,
+        h=admin_helpers,
+        get_url=url_for
+    )
 
 
 def make_shell_context():
@@ -33,10 +69,7 @@ def populate():
     Please consider the security implications that might arise!
     :return:
     """
-    Role.inject_roles()
-    User.inject_users()
-    GameType.inject_game_types()
-
+    init_db()
 
 
 if __name__ == '__main__':

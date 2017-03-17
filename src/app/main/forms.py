@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, TextAreaField, ValidationError
-from wtforms.validators import Email, Length, EqualTo, DataRequired, Regexp
+from wtforms.validators import DataRequired
 from json import loads
 
 
