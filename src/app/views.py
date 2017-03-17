@@ -6,6 +6,7 @@ from flask_admin.base import AdminIndexView
 from flask_admin.actions import action
 from flask_admin.model.template import LinkRowAction
 from flask_admin.contrib.fileadmin import FileAdmin
+from flask_admin.form import SecureForm
 from flask_security import current_user
 from datetime import datetime
 from . import aggregate_moves, make_zip, db
@@ -16,6 +17,8 @@ class GGFileAdmin(FileAdmin):
     """
     A FileAdmin customized in order to allow the access by users having 'admin' role.
     """
+    form_base_class = SecureForm
+
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
             return False
@@ -81,6 +84,7 @@ class GGBasicAdminView(ModelView):
     page_size = 20
     can_set_page_size = True
     can_view_details = True
+    form_base_class = SecureForm
 
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:
