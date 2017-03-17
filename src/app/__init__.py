@@ -44,6 +44,7 @@ def aggregate_moves(moves, sids):
 
     return sid_data, unique_hands
 
+
 def csv2string(data):
     """
     Format a list of items into a CSV string.
@@ -229,7 +230,6 @@ class SessionAdminView(GGBasicAdminView):
     def action_download(self, ids):
         try:
             from models import Move
-            from adm.views import aggregate_moves
 
             moves = Move.query.filter(Move.sid.in_(ids)).all()
             data, hands = aggregate_moves(moves, ids)
