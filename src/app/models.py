@@ -1,4 +1,4 @@
-from . import db, socket_io
+from . import db, socket_io, SHOE_FILE_ORDER
 from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore, current_user
 from flask_security.utils import encrypt_password
 from flask import current_app, request, session
@@ -8,7 +8,6 @@ from decorators import authenticated_only
 from os.path import join, dirname, abspath, sep
 from json import dumps
 
-SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 user_d = dict()  # maps user names to Session objects
 

@@ -1,10 +1,6 @@
 from flask import Flask, send_file, flash, session, abort, redirect, request, url_for
 from celery import Celery
-# from flask_bootstrap import Bootstrap
-# from flask_mail import Mail
-# from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
-# from flask_login import LoginManager
 from flask_admin import Admin, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.view import func
@@ -15,6 +11,7 @@ from flask_admin.contrib.fileadmin import FileAdmin
 from flask_security import current_user
 from flask_socketio import SocketIO
 from config import config
+# from models import SHOE_FILE_ORDER
 from csv import writer
 from io import BytesIO
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
@@ -22,6 +19,31 @@ from time import time, localtime
 from datetime import datetime
 from json import loads
 
+SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+
+def aggregate_moves(moves, sids):
+    unique_hands = []
+    current_hand = None
+    sid_data = dict([(x, {}) for x in sids])  # maps <sid> -> { <hand> -> [seq] }
+    FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
+
+    for move in moves:
+        if move.mv.startswith('HAND'):
+            d = loads(move.mv.replace('HAND', ''))
+            current_hand = ' '.join(d[x] for x in FILE_ORDER)
+            if not current_hand in unique_hands:
+                # print "current hand:",current_hand
+                unique_hands.append(current_hand)
+            else:
+                current_hand = ' '.join(d[x] for x in FILE_ORDER)
+        else:
+            if current_hand in sid_data[str(move.sid)]:  # hand exists for this sid
+                sid_data[str(move.sid)][current_hand].append(move.mv)
+            else:  # hand does not exists and thus the linked list
+                sid_data[str(move.sid)][current_hand] = [move.mv]
+
+    return sid_data, unique_hands
 
 def csv2string(data):
     """
@@ -36,15 +58,8 @@ def csv2string(data):
     return si.getvalue().strip('\r\n')
 
 
-# bootstrap = Bootstrap()
-# mail = Mail()
-# moment = Moment()
 db = SQLAlchemy()
-
 socket_io = SocketIO()
-# login_manager = LoginManager()
-# login_manager.session_protection = 'strong'
-# login_manager.login_view = 'auth.login'
 
 
 class GGFileAdmin(FileAdmin):
@@ -320,22 +335,12 @@ def create_app(cfg):
     app.config.from_object(config[cfg])
 
     config[cfg].init_app(app)
-    # bootstrap.init_app(app)
-    # mail.init_app(app)
-    # moment.init_app(app)
     db.init_app(app)
-    # login_manager.init_app(app)
-    # socket_io.init_app(app, async_mode='eventlet', message_queue='redis://localhost:6379/0')
+
     socket_io.init_app(app, message_queue='redis://localhost:6379/0')
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
-
-    # from .auth import auth as auth_blueprint
-    # app.register_blueprint(auth_blueprint, url_prefix='/auth')
-
-    # from .adm import adm as adm_blueprint
-    # app.register_blueprint(adm_blueprint, url_prefix='/adm')
 
     if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
         from flask_sslify import SSLify
