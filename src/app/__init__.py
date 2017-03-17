@@ -11,7 +11,6 @@ from flask_admin.contrib.fileadmin import FileAdmin
 from flask_security import current_user
 from flask_socketio import SocketIO
 from config import config
-# from models import SHOE_FILE_ORDER
 from csv import writer
 from io import BytesIO
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
