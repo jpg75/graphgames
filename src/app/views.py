@@ -76,6 +76,33 @@ class MyHomeView(AdminIndexView):
 
         return self.render(session['game_cfg']['html_file'])
 
+    @expose('/replay/<int:sid>')
+    def replay_game_session(self, sid):
+        """
+        This dynamic route generate a dummy session of the required session game. This section is
+        automatic, meaning that the system replays each moves stored in the session following the
+        original temporal sequence.
+        The actual game type is collected by the game session.
+
+        The user can just watch the recorded session or quit visualization.
+
+        The DB is not affected (no writes) by this route operation.
+        :param sid:
+        :return: the corresponding game template
+        """
+        from models import GameSession, GameType
+
+        s = GameSession.query.filter_by(id=sid).first()
+        gt = GameType.query.filter_by(id=s.type).first()
+        gt_struct = loads(gt.params)
+        gt_struct['replay'] = True  # set replay active
+
+        session['game_cfg'] = gt_struct
+        session['game_type'] = gt.id
+        session['game_session'] = sid
+
+        return self.render(gt_struct['html_file'])
+
 
 class GGBasicAdminView(ModelView):
     """
@@ -149,36 +176,11 @@ class SessionAdminView(GGBasicAdminView):
     column_filters = ['id', 'uid', 'type']
 
     column_extra_row_actions = [
-        LinkRowAction('glyphicon glyphicon-repeat', '/admin/gamesessions/replay/{row_id}',
+        LinkRowAction('glyphicon glyphicon-repeat', '/admin/replay/{row_id}',
                       title='Replay')
     ]
 
-    @expose('/replay/<int:sid>')
-    def replay_game_session(self, sid):
-        """
-        This dynamic route generate a dummy session of the required session game. This section is
-        automatic, meaning that the system replays each moves stored in the session following the
-        original temporal sequence.
-        The actual game type is collected by the game session.
 
-        The user can just watch the recorded session or quit visualization.
-
-        The DB is not affected (no writes) by this route operation.
-        :param sid:
-        :return: the corresponding game template
-        """
-        from models import GameSession, GameType
-
-        s = GameSession.query.filter_by(id=sid).first()
-        gt = GameType.query.filter_by(id=s.type).first()
-        gt_struct = loads(gt.params)
-        gt_struct['replay'] = True  # set replay active
-
-        session['game_cfg'] = gt_struct
-        session['game_type'] = gt.id
-        session['game_session'] = sid
-
-        return self.render(gt_struct['html_file'])
 
     @action('download', 'Download', 'Are you sure you want to download selected session data?')
     def action_download(self, ids):

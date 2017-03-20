@@ -8,10 +8,59 @@ from csv import writer
 from io import BytesIO
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 from time import time, localtime
+from os.path import join, dirname, abspath, sep
 from json import loads
 
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+
+def loadFile(fqn_file):
+    """Returns a list with all the lines in the file. The end line is purged.
+    The file can include its full path name.
+    """
+    with open(fqn_file) as f:
+        return f.read().splitlines()
+
+
+class Configuration(object):
+    '''
+    Basic configuration class.
+    It reads a file with simple key value lines and makes a corresponding
+    dictionary.
+    '''
+
+    def __init__(self, config_file='config.txt', rel_path='data'):
+        '''
+        Constructor
+        '''
+        self._data = dict()
+        cur_dir = dirname(abspath('file'))
+        self.content = loadFile(join(sep, cur_dir, rel_path, config_file))
+
+    def purgelines(self):
+        """Remove white spaces and removes comments and blank lines."""
+        lines = []
+        for line in self.content:
+            if line.startswith('#') or line.startswith('//') or line == '' or line.isspace():
+                continue
+            else:
+                lines.append(line.strip())
+
+        self.content = lines
+
+    def initialize(self):
+        """Generate the dictionary with <parameter> -> <value> maps.
+        """
+        for line in self.content:
+            k, v = line.split('=')
+            self._data[k.strip()] = v.strip()
+
+    def getParam(self, param):
+        return self._data.get(param)
+
+    def listParams(self):
+        return self._data.keys()
 
 
 def aggregate_moves(moves, sids):
@@ -120,7 +169,9 @@ celery = make_celery()
 app = create_app(cfg='default')
 celery.config_from_object(config['celery'])
 
-import views
-admin = Admin(app, name='Graphgames', index_view=views.MyHomeView(),
+from views import MyHomeView
+from games import games
+
+admin = Admin(app, name='Graphgames', index_view=MyHomeView(),
               base_template='admin/gg_master.html',
               template_mode='bootstrap3')
