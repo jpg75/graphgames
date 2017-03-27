@@ -12,6 +12,9 @@
         {%- endif %}<span class="caret"></span></a>
     <ul class="dropdown-menu" role="menu">
         <li><a href="{{ url_for('security.logout') }}">Log out</a></li>
+        {% if security.changeable %}
+            <li><a href="{{ url_for('security.change_password') }}">Change password</a><br/></li>
+        {% endif %}
     </ul>
 </div>
 {% endif %}
