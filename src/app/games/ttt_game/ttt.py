@@ -1,11 +1,11 @@
-from .. import socket_io, db, Configuration
-from ..decorators import authenticated_only
+from ... import socket_io, db, Configuration
+from ...decorators import authenticated_only
 from flask_security import current_user
 from flask_socketio import emit
 from flask import request, session
 from datetime import datetime
-from ..models import Move, GameSession
-from ..tasks import replay_task
+from ...models import Move, GameSession
+from ...tasks import replay_task
 from json import dumps
 
 user_d = dict()  # maps user names to Session objects
