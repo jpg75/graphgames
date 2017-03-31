@@ -218,26 +218,3 @@ class SessionAdminView(GGBasicAdminView):
 
             flash('Failed to download session data')
 
-
-class MyMoveAdminView(GGBasicAdminView):
-    """
-    View for the current user moves. Cannot be created.
-    """
-    can_view_details = False
-    can_create = False
-
-    def get_query(self):
-        return self.session.query(self.model).filter(self.model.uid == current_user.id)
-
-    def get_count_query(self):
-        return self.session.query(func.count('*')).filter(self.model.uid == current_user.id)
-
-    def is_accessible(self):
-        """
-        Admin access not required.
-        :return:
-        """
-        if not current_user.is_active or not current_user.is_authenticated:
-            return False
-
-        return True
