@@ -1,1 +1,1 @@
-import ttt as games
+import ttt_game.ttt as games

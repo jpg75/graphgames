@@ -3,8 +3,7 @@
 import os
 from flask import url_for
 from app import db, socket_io, app, admin
-from app.views import  UserAdminView, MyMoveAdminView, \
-    GameTypeAdminView, SessionAdminView, GGFileAdmin
+from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, GGFileAdmin
 from app.models import User, Role, Move, GameSession, GameType, user_datastore, \
     init_db
 from flask_script import Manager, Shell
@@ -28,7 +27,6 @@ def user_registered_sighandler(app, user, confirm_token):
     db.session.commit()
 
 
-admin.add_view(MyMoveAdminView(Move, db.session, name='My moves'))
 admin.add_view(UserAdminView(User, db.session, name='Users'))
 admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
