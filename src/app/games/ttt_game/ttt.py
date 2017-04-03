@@ -1,16 +1,103 @@
 from ... import socket_io, db, Configuration
 from ...decorators import authenticated_only
 from flask_security import current_user
-from flask_socketio import emit
+from flask_socketio import SocketIO, emit
 from flask import request, session
 from datetime import datetime
 from ...models import Move, GameSession
-from ...tasks import replay_task
-from json import dumps
-# from ... import celery
+from json import dumps, loads
+from time import sleep
+from ... import celery
 
 user_d = dict()  # maps user names to Session objects
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+
+@celery.task()
+def replay_task(url, sid, struct):
+    """
+    Generate a local web socket linked to the queue url. The task process is tied to this
+    communication link for its lifespan.
+    Takes all the element of a game session and sends back to the client the exact sequence of
+    events scheduling them with the exact timing.
+    The code is verbose using print statements. They are visible through the celery worker
+    console in debug mode.
+
+    :param url: A (Redis) queue url
+    :param sid: session ID
+    :param struct: dictionary with game instance parameters
+    :return:
+    """
+    print "Replay Task started!"
+
+    # get all the session moves
+    moves = Move.query.filter_by(sid=sid).all()
+    print moves
+    print "Fetched %d moves" % len(moves)
+    local_socket = SocketIO(message_queue=url)
+    i = 0
+    # send all moves one by one
+    for move in moves[1:]:
+        c = move.ts - moves[i].ts
+        m = moves[i].mv
+        fsec = c.total_seconds()
+        # print "Processing move: ", m
+        # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
+        # kind of move inside the DB. A refined version would be agnostic! In should send
+        # whatever found in DB entries, since each game is responsible to interpret its own data.
+        if m.startswith('HAND'):
+            hand = m.replace('HAND ', '')
+            local_socket.emit('replay', {'success': 'ok', 'hand': loads(hand),
+                                         'next_move_at': fsec,
+                                         'move': None,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+            print "replaying: %s" % hand
+        else:
+            local_socket.emit('replay', {'success': 'ok', 'hand': None,
+                                         'next_move_at': fsec,
+                                         'move': m,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+            print "replaying: %s" % m
+
+        print "Waiting: %f seconds" % fsec
+        sleep(fsec)
+        i += 1
+        print i
+        # send the last move:
+        if i == len(moves) - 1:
+            print "send last move!"
+            local_socket.emit('replay', {'success': 'ok', 'hand': None,
+                                         'move': moves[i].mv,
+                                         'next_move_at': fsec,
+                                         'covered': struct['covered'],
+                                         'opponent_covered': struct['opponent_covered']})
+            print "replaying: %s" % moves[i].mv
+
+    sleep(5.0)  # by default wait half second before quitting the game
+    local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
+    print "Game over."
+
+
+@celery.task()
+def bot_task(url, sid, struct):
+    """
+    Generate a local web socket linked to the queue url. The task process is tied to this
+    communication link for its lifespan.
+    Play the TTT using a rule-based AI. Rules are in the file 'data/arules.txt'.
+    The game is entirely managed by this thread. The client is driven passively.
+    AI moves and client ones are stored in DB.
+
+    The code is verbose using print statements. They are visible through the celery worker
+    console in debug mode.
+
+    :param url: A (Redis) queue url
+    :param sid: session ID
+    :param struct: dictionary with game instance parameters
+    """
+    pass
+
 
 @socket_io.on('replay_ready')
 @authenticated_only
