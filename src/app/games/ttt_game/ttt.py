@@ -7,6 +7,7 @@ from datetime import datetime
 from ...models import Move, GameSession
 from ...tasks import replay_task
 from json import dumps
+# from ... import celery
 
 user_d = dict()  # maps user names to Session objects
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
@@ -23,6 +24,19 @@ def replay_ready(message):
     replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
                       struct=session['game_cfg'])
 
+
+@socket_io.on('multiplayer_ready')
+@authenticated_only
+def multiplayer_ready(message):
+    """
+    Called when 'multiplayer_ready' message is received. The background task is spawned.
+
+    :param message:
+    :return:
+    """
+    # bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+    #                   struct=session['game_cfg'])
+    pass
 
 @socket_io.on('login')
 @authenticated_only
@@ -50,6 +64,10 @@ def login(message):
     if session['game_cfg']['replay']:
         print "Client have to replay a session"
         emit('set_replay', {})
+
+    elif session['game_cfg']['multiplayer']:
+        print "Client have to play a multi-user game (possibly AI)"
+        emit('set_multiplayer', {})
 
     else:
         user_d[current_user.email] = Configuration(config_file=session['game_cfg']['shoe_file'])

@@ -19,6 +19,7 @@ let username = '';
 let covered = null;  // whether or not covering cards
 let opponent_covered = false;
 let replay = false;  // support for replay of game sessions
+let multiplayer = false;    // support for multiplayer sessions
 
 /*
 * Handlers for network messages over socket-io (websockets)
@@ -338,6 +339,17 @@ function handleTogglePlayers() {
     invertPlayers($('#'+player));
     console.log("Switched to player: "+player);
     makeDraggable();
+}
+
+/**
+* Enable the replay mode in the client app.
+*/
+function handleMultiplayer(message) {
+    console.log('Multiplayer mode ENABLED');
+    multiplayer = true;
+    window.alert('Ready for a multiplayer session');
+
+    socket.emit('multiplayer_ready', {}); // notify the server we are ready
 }
 
 /**
