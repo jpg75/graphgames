@@ -414,12 +414,13 @@ function handleMove(message) {
 /**
 * Send a specific move to the server.
 */
-function sendMove(move, moved_card){
+function sendMove(move, moved_card) {
 	let d = new Date();
 	console.log('sending: '+player+ ' move: '+move);
 	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
 		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
 		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
-		'moved_card': moved_card, 'goal_card': goalCard});
+		'moved_card': moved_card, 'goal_card': goalCard, 'up': $('#U').attr('id'),
+		'target': $('#U').attr('id'), 'in_hand': $('#'+player).attr('id')} );
 }
 

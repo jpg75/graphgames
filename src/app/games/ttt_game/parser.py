@@ -7,9 +7,9 @@ class RuleParser(object):
     Class for reading and parsing rules for the automatic player.
     Rules are in 'data/arules.txt' file by default.
     """
-    
+
     # as in old 'REGOLE.TXT' file
-    weights = [100, 100, 100, 15, 15, 15, 15, 5, 5, 5, 3, 3, 3, 1, 1, 1, 1]  
+    weights = [100, 100, 100, 15, 15, 15, 15, 5, 5, 5, 3, 3, 3, 1, 1, 1, 1]
 
     def __init__(self, file_name='data/arules.txt'):
         self.filename = file_name
@@ -36,20 +36,26 @@ class RuleParser(object):
 
         print "Rules loaded: ", len(self.rules)
 
-    def match(self, hand, up, target, ck_knowledge, nk_knowledge, history_record, auto_player='nk'):
+    def match(self, hand, up, target, ck_knowledge, nk_knowledge,
+              history_record_keys=set(['move',
+                                       'in_hand',
+                                       'up',
+                                       'target']),
+              auto_player='nk'):
         """Calculate the rule match and return the rule to apply.
         The rule to apply is selected according to the rate scored.
-        If multiple rules scored the same, then a rule is selected at random
+        If multiple rules scored the same, then a rule is selected at random.
         """
         if not ck_knowledge:
             ckk = []
         else:
-            ckk = [[i.get(k) for k in history_record.iterkeys() if k != 'hand'] for i in ck_knowledge]
+            ckk = [[i.get(k) for k in history_record_keys if k != 'hand'] for i in
+                   ck_knowledge]
 
         if not nk_knowledge:
             nkk = []
         else:
-            nkk = [[i.get(k) for k in history_record.iterkeys()] for i in nk_knowledge]
+            nkk = [[i.get(k) for k in history_record_keys] for i in nk_knowledge]
 
         # since they are lists of 2 items they are multiplied for the inner elements:
         nksize = len(nkk) * 4
@@ -63,11 +69,11 @@ class RuleParser(object):
         # makes a single list where alternatively puts ck_knowledge and
         # nk_knowledge elements 'hand' elements are removed from ck_knowledge
         iters = [iter(ckk), iter(nkk)]
-        knowledge = [hand, up, target] 
+        knowledge = [hand, up, target]
         l = list(it.next() for it in itertools.cycle(iters))
         knowledge.extend([item for sublist in l for item in sublist])
         print "Knowledge: %s" % knowledge
-        
+
         for rule in rl:
             score = 0
             comparison = zip(rule[1:], knowledge)
@@ -79,7 +85,7 @@ class RuleParser(object):
                         score += 1 + RuleParser.weights[index]
                     except IndexError as ie:
                         score += 1
-                        
+
                 elif r == '#':
                     pass
                 else:
@@ -92,9 +98,9 @@ class RuleParser(object):
                 else:
                     self.rates[score] = []
                     self.rates[score].append(rule)
-              
+
                 print "COMPARING: %s score %d" % (comparison, score)
-        
+
         highest_score = max(self.rates.keys())
         result = self.rates[highest_score]
         print "Highest score: %d" % highest_score

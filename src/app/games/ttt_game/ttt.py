@@ -8,9 +8,17 @@ from ...models import Move, GameSession
 from json import dumps, loads
 from time import sleep
 from ... import celery
+from parser import RuleParser
+from collections import deque
 
 user_d = dict()  # maps user names to Session objects
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+history_record = {'move': '',
+                  # card in the hand of the current player: in 'NK' position if it is
+                  # numberkeeper's turn
+                  'in_hand': '',
+                  'up': '',
+                  'target': ''}
 
 
 @celery.task()
@@ -96,7 +104,10 @@ def bot_task(url, sid, struct):
     :param sid: session ID
     :param struct: dictionary with game instance parameters
     """
-    pass
+    print "TTT bot started!"
+    rulep = RuleParser()
+    rulep.load_rules()
+    local_socket = SocketIO(message_queue=url)
 
 
 @socket_io.on('replay_ready')
@@ -124,6 +135,7 @@ def multiplayer_ready(message):
     # bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
     #                   struct=session['game_cfg'])
     pass
+
 
 @socket_io.on('login')
 @authenticated_only
@@ -187,6 +199,15 @@ def move(message):
 
     else:
         player = message['player']
+        # updates the history for the current player before switching it
+        history = deque(session[player + '_history'], 2)
+        history.appendleft({'move': message['move'],
+                            'up': message['up'],
+                            'target': message['target'],
+                            'in_hand': message['in_hand']
+                            })
+        session[player + '_history'] = history
+
         if player == 'CK':
             player = 'NK'
         else:
@@ -211,6 +232,10 @@ def test_disconnect():
 def serve_new_hand(username):
     s = user_d[current_user.email]
     if len(s.content) > 0:
+        # clean the histories in the session:
+        session['ck_history'] = None
+        session['nk_history'] = None
+
         hand = s.content.pop(0)
         hand = hand.upper()
         hand = hand.split()
