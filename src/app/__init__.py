@@ -11,7 +11,6 @@ from time import time, localtime
 from os.path import join, dirname, abspath, sep
 from json import loads
 
-
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 
@@ -70,19 +69,21 @@ def aggregate_moves(moves, sids):
     FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
 
     for move in moves:
-        if move.mv.startswith('HAND'):
-            d = loads(move.mv.replace('HAND', ''))
-            current_hand = ' '.join(d[x] for x in FILE_ORDER)
+        d = loads(move.mv)
+        if d['move'] == 'HAND':
+            # d = loads(move.mv.replace('HAND', ''))
+            current_hand = ' '.join(d['panel'][x] for x in FILE_ORDER)
             if not current_hand in unique_hands:
                 # print "current hand:",current_hand
                 unique_hands.append(current_hand)
             else:
-                current_hand = ' '.join(d[x] for x in FILE_ORDER)
+                current_hand = ' '.join(d['panel'][x] for x in FILE_ORDER)
         else:
+            current_move = loads(move.mv)['move']
             if current_hand in sid_data[str(move.sid)]:  # hand exists for this sid
-                sid_data[str(move.sid)][current_hand].append(move.mv)
+                sid_data[str(move.sid)][current_hand].append(current_move)
             else:  # hand does not exists and thus the linked list
-                sid_data[str(move.sid)][current_hand] = [move.mv]
+                sid_data[str(move.sid)][current_hand] = [current_move]
 
     return sid_data, unique_hands
 

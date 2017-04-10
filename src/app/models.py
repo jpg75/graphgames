@@ -124,24 +124,35 @@ class GameType(db.Model):
     def inject_game_types():
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
-        types = {'Small TTT Solo': ({'html_file': 'admin/games/ttt-page.html',
-                                     'shoe_file': 'game422-small.txt',
-                                     'replay': False,
-                                     'multiplayer': False,
-                                     'enable_bot': False,
-                                     'opponent_covered': True,
-                                     'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-                                                 'CK': False, 'T': False}}),
-                 'Small TTT Solo Uncovered': (
-                     {'html_file': 'admin/games/ttt-page.html',
-                      'shoe_file': 'game422-small.txt',
-                      'replay': False,
-                      'multiplayer': False,
-                      'enable_bot': False,
-                      'opponent_covered': False,
-                      'covered': {'NK': False, 'N': True, 'U': False,
-                                  'C': True, 'CK': False, 'T': False}})
-                 }
+        types = {'Small TTT Solo': (
+            {'html_file': 'admin/games/ttt-page.html',
+             'shoe_file': 'game422-small.txt',
+             'replay': False,
+             'enable_multiplayer': False,
+             'enable_bot': False,
+             'opponent_covered': True,
+             'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                         'CK': False, 'T': False}}),
+            'Small TTT Solo Uncovered': (
+                {'html_file': 'admin/games/ttt-page.html',
+                 'shoe_file': 'game422-small.txt',
+                 'replay': False,
+                 'enable_multiplayer': False,
+                 'enable_bot': False,
+                 'opponent_covered': False,
+                 'covered': {'NK': False, 'N': True, 'U': False,
+                             'C': True, 'CK': False, 'T': False}}),
+            'AI enabled TTT. The AI bot adopts a rule-based engine.': (
+                {'shoe_file': 'game422-small.txt',
+                 'html_file': 'admin/games/ttt-page.html',
+                 'replay': False,
+                 'enable_bot': True,
+                 'enable_multiplayer': True,
+                 'covered': {'CK': False, 'C': True, 'NK': False,
+                             'N': True, 'U': False, 'T': False},
+                 'opponent_covered': True}
+            )
+        }
 
         for t in types:
             gt = GameType.query.filter_by(info=t).first()

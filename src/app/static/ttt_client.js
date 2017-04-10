@@ -389,14 +389,15 @@ function handleReplay(message) {
 * Handle the reproduction of a played move.
 */
 function handleMove(message) {
-    if (message['move'] == 'P') {  // PASS move
+    if (message['move']['move'] == 'P') {  // PASS move
         console.log("Replaying move: " + message['move']);
         score++;
         handleTogglePlayers();
     }
     else {
         console.log("Replaying move: " + message['move']);
-        let mv = message['move'];
+        let mv = message['move']['move'];
+        console.log("mv: " + mv);
         // swap the current player card with the one in the position indicated by the move
         // all over the html document
         let pl_card = $('#' + player + ' > .card');
@@ -450,12 +451,10 @@ function handleExternalMove(message) {
 function sendMove(move, moved_card) {
 	let d = new Date();
 	console.log('sending: '+player+ ' move: '+move);
-	socket.emit('move', {'username': username,
+	socket.emit('move', {
 	    'player': player,
-	    'move': move, 'ts':
-		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
-		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
-		'moved_card': moved_card,
+	    'move': move,
+	    'moved_card': moved_card,
 		'goal_card': goalCard,
 		'in_hand': $('#' + player + '>.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
 		'panel': {

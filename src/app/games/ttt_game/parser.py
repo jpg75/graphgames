@@ -36,16 +36,14 @@ class RuleParser(object):
 
         print "Rules loaded: ", len(self.rules)
 
-    def match(self, hand, up, target, ck_knowledge, nk_knowledge,
-              history_record_keys=set(['move',
-                                       'in_hand',
-                                       'up',
-                                       'target']),
-              auto_player='nk'):
+    def match(self, hand, up, target, ck_knowledge, nk_knowledge, auto_player='nk'):
         """Calculate the rule match and return the rule to apply.
         The rule to apply is selected according to the rate scored.
         If multiple rules scored the same, then a rule is selected at random.
+        :type history_record_keys: set object
         """
+        history_record_keys = ['move', 'in_hand', 'U', 'T']
+
         if not ck_knowledge:
             ckk = []
         else:
@@ -101,6 +99,7 @@ class RuleParser(object):
 
                 print "COMPARING: %s score %d" % (comparison, score)
 
+        print self.rates
         highest_score = max(self.rates.keys())
         result = self.rates[highest_score]
         print "Highest score: %d" % highest_score

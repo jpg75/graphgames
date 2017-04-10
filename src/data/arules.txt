@@ -6,13 +6,13 @@
 
 //Regole valide quando in Target c' e' il quattro di fiori																		
 
-// Vai in Target stile 442 se hai il 4di cuori  in mano																		
+// Vai in Target stile 442 se hai il 4 di cuori in mano
 T		4H	#	4C														
 T		4H	2H	4C														
 // Correzioni alla 1: Se Ck ha preso il 2 fiori adattati al suo stile e cerca il 2 cuori (422)																		
 C		4H	#	4C	U	2C	4C											
 N		4H	#	4C	U	2C	4C											
-// Integrazione alle 2,3: Se Ck ha preso il 2 fiori e ti ha passato il 2 cuori, prendilo (422)																		
+// Integrazione alle 2,3: Se Ck ha preso il 2 fiori e ti ha passato il 2 cuori, prendilo (422)
 U		4H	2H	4C	U	2C	4C											
 // Correzioni alla 1: Anche se hai il 4 cuori in mano, cerca il  2 cuori (422), Se Ck ha preso il 2 fiori  														
 N		4H	#	4C	#	#	4C	C	#	#	4C	U	2C	4C
@@ -20,7 +20,7 @@ C		4H	#	4C	#	#	4C	N	#	#	4C	U	2C	4C
 // Se c' e' il 2 fiori in target cerca il due cuori (da semplificare???)														
 N		#	#	2C	T	#	4C	C	#	#	4C			
 C		#	#	2C	T	#	4C	N	#	#	4C			
-//Prendi il quattro di cuori (442) se lo vedi in Up														
+// Prendi il quattro di cuori (442) se lo vedi in Up
 U		#	4H	4C										
 U		#	4H	4C	U	#	4C							
 
