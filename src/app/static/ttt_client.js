@@ -31,7 +31,7 @@ socket.on('connect', function() {
 socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
-    if (message['comment']){
+    if (message['comment']) {
         window.alert('Game Over: '+ message['comment']);
     }
 	else {
@@ -41,6 +41,8 @@ socket.on('gameover', function(message) {
 socket.on('toggle_players', handleTogglePlayers);
 socket.on('replay', handleReplay);
 socket.on('set_replay', handleSetReplay);
+socket.on('set_multiplayer', handleSetMultiplayer);
+socket.on('external_move', handleExternalMove);
 
 
 $(document).ready(function () {
@@ -80,7 +82,7 @@ $(document).ready(function () {
 				/* Current valid move, sent before inverting players. Currently, the
 				 server handles the switching to another user (role).
 				*/
-				sendMove($toParent.attr('id'), moved_card);
+				// sendMove($toParent.attr('id'), moved_card);
 
 				window.endPos = $to.offset();
 
@@ -91,7 +93,9 @@ $(document).ready(function () {
             		makeDraggable();
             		// console.log('animation ended!');
           		});
-
+                /* Now the view is consistent with data inside cards objects, we can send the
+                move and panel information: */
+                sendMove($toParent.attr('id'), moved_card);
           		score++;
           	}
 	    }
@@ -344,7 +348,7 @@ function handleTogglePlayers() {
 /**
 * Enable the replay mode in the client app.
 */
-function handleMultiplayer(message) {
+function handleSetMultiplayer(message) {
     console.log('Multiplayer mode ENABLED');
     multiplayer = true;
     window.alert('Ready for a multiplayer session');
@@ -391,7 +395,7 @@ function handleMove(message) {
         handleTogglePlayers();
     }
     else {
-        console.log("Replaying move: "+message['move']);
+        console.log("Replaying move: " + message['move']);
         let mv = message['move'];
         // swap the current player card with the one in the position indicated by the move
         // all over the html document
@@ -412,15 +416,56 @@ function handleMove(message) {
 }
 
 /**
+*  Handle the reception of a remote player move (bot or human).
+*/
+function handleExternalMove(message) {
+    console.log("HandleEXTERNALMOVE: " + message);
+    if (message['move'] == 'P') {  // PASS move
+        score++;
+        handleTogglePlayers();
+    }
+    else {
+        let mv = message['move'];
+        // swap the current player card with the one in the position indicated by the move
+        // all over the html document
+        let pl_card = $('#' + player + ' > .card');
+        let move_card = $('#' + mv + ' > .card');
+        // card name, es: 2H
+            let pl_key = pl_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        let move_key = move_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        console.log("player card key: "+pl_key);
+        console.log("to be moved card key: "+move_key);
+
+        pl_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + move_key + '.png');
+        move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
+        score++;
+
+        handleTogglePlayers();
+    }
+}
+
+/**
 * Send a specific move to the server.
 */
 function sendMove(move, moved_card) {
 	let d = new Date();
 	console.log('sending: '+player+ ' move: '+move);
-	socket.emit('move', {'username': username, 'player': player, 'move': move, 'ts': 
+	socket.emit('move', {'username': username,
+	    'player': player,
+	    'move': move, 'ts':
 		d.getUTCFullYear() + '-' + (d.getUTCMonth()+1) + '-' + d.getUTCDate()+ ' ' 
 		+ d.getUTCHours() + ':' + d.getUTCMinutes() + ':' + d.getUTCSeconds() + '.' + d.getUTCMilliseconds(), 
-		'moved_card': moved_card, 'goal_card': goalCard, 'up': $('#U').attr('id'),
-		'target': $('#U').attr('id'), 'in_hand': $('#'+player).attr('id')} );
+		'moved_card': moved_card,
+		'goal_card': goalCard,
+		'in_hand': $('#' + player + '>.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		'panel': {
+		    'CK': $('#CK >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		    'NK': $('#NK >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		    'C': $('#C >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		    'N': $('#N >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		    'U': $('#U >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		    'T': $('#T >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4)
+		}
+	} );
 }
 
