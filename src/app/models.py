@@ -75,10 +75,6 @@ def init_db():
                                            password=encrypt_password('botpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
-            u = user_datastore.create_user(email='gp.jesi@gmail.com',
-                                           password=encrypt_password('pippo'))
-            user_datastore.add_role_to_user(u, default_role)
-
         db.session.commit()
 
         if not GameType.query.first():
