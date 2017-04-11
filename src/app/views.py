@@ -1,7 +1,6 @@
 from flask import send_file, flash, session, abort, redirect, request, url_for
 from flask_admin import expose
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.contrib.sqla.view import func
 from flask_admin.base import AdminIndexView
 from flask_admin.actions import action
 from flask_admin.model.template import LinkRowAction
@@ -177,10 +176,10 @@ class SessionAdminView(GGBasicAdminView):
 
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-repeat', '/admin/replay/{row_id}',
-                      title='Replay')
+                      title='Replay'),
+        LinkRowAction('glyphicon glyphicon-tree-conifer', '/admin/',
+                      title='Show graph')
     ]
-
-
 
     @action('download', 'Download', 'Are you sure you want to download selected session data?')
     def action_download(self, ids):
