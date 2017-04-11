@@ -151,14 +151,14 @@ function makeDraggable() {
 */ 
 function initCardsData(){
 	$('.card').each(function(index, el) {
-	    let key = $(this).find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+	    let key = $(this).find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
 	});
 
 	// set correct card into goal card GUI:
-	let gcfile = "/static/" + goalCard + ".png";
+	let gcfile = "/static/games/ttt/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 	// UGLY! You can use Knockout.js for example
     $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: " +player+'</p></h5></div>');
@@ -218,7 +218,7 @@ function eventuallyToggleOpponent() {
     console.log('eventually toggle: '+player);
 	if (player == 'NK') {
 		let cardObj = $("#CK").children();
-		let viscard = cardObj.find("[src='/static/card_back.png']").css('display');
+		let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 			
 	    console.log('viscard: ' + viscard);
 		if (viscard == 'none' && opponent_covered)
@@ -229,7 +229,7 @@ function eventuallyToggleOpponent() {
 
 	if (player == 'CK' && opponent_covered){
 		let cardObj = $("#NK").children();
-		let viscard = cardObj.find("[src='/static/card_back.png']").css('display');
+		let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 		
 		console.log('viscard: '+viscard);
 		if (viscard == 'none' && opponent_covered)
@@ -249,7 +249,7 @@ function setCoveredCards() {
 			$("#" + card).css('border', '2px solid #333');  // resets the card-slot border as unmarked
 			if ( (card != 'GC') && (card != 'PL') ) {
 				let cardObj = $("#" + card).children();
-			 	let visibility = cardObj.find("[src='/static/card_back.png']").css('display');
+			 	let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
 				if (visibility == 'none' && val) // uncovered amd must be covered
 					cardObj.find('img').toggle();
@@ -326,7 +326,7 @@ function handleHand(message) {
 		}
 		else {
 		    // each card is updated with the corresponding figure:
-		    $("#" + card).find("[src!='/static/card_back.png']").attr('src', '/static/' + val +'.png');
+		    $("#" + card).find("[src!='/static/games/ttt/card_back.png']").attr('src', '/static/games/ttt/' + val +'.png');
 		}
 	});
 
@@ -403,13 +403,13 @@ function handleMove(message) {
         let pl_card = $('#' + player + ' > .card');
         let move_card = $('#' + mv + ' > .card');
         // card name, es: 2H
-        let pl_key = pl_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
-        let move_key = move_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+        let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        let move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         console.log("player card key: "+pl_key);
         console.log("to be moved card key: "+move_key);
 
-        pl_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + move_key + '.png');
-        move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
+        pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src', '/static/games/ttt/' + move_key + '.png');
+        move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src', '/static/games/ttt/' + pl_key + '.png');
         score++;
 
         handleTogglePlayers();
@@ -432,13 +432,13 @@ function handleExternalMove(message) {
         let pl_card = $('#' + player + ' > .card');
         let move_card = $('#' + mv + ' > .card');
         // card name, es: 2H
-            let pl_key = pl_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
-        let move_key = move_card.find("[src!='/static/card_back.png']").attr('src').slice(-6, -4);
+            let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        let move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         console.log("player card key: "+pl_key);
         console.log("to be moved card key: "+move_key);
 
-        pl_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + move_key + '.png');
-        move_card.find("[src!='/static/card_back.png']").attr('src', '/static/' + pl_key + '.png');
+        pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src', '/static/games/ttt/' + move_key + '.png');
+        move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src', '/static/games/ttt/' + pl_key + '.png');
         score++;
 
         handleTogglePlayers();
@@ -456,14 +456,14 @@ function sendMove(move, moved_card) {
 	    'move': move,
 	    'moved_card': moved_card,
 		'goal_card': goalCard,
-		'in_hand': $('#' + player + '>.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
+		'in_hand': $('#' + player + '>.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
 		'panel': {
-		    'CK': $('#CK >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
-		    'NK': $('#NK >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
-		    'C': $('#C >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
-		    'N': $('#N >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
-		    'U': $('#U >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4),
-		    'T': $('#T >.card').find("[src!='/static/card_back.png']").attr('src').slice(-6, -4)
+		    'CK': $('#CK >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
+		    'NK': $('#NK >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
+		    'C': $('#C >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
+		    'N': $('#N >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
+		    'U': $('#U >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4),
+		    'T': $('#T >.card').find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4)
 		}
 	} );
 }
