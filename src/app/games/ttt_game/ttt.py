@@ -50,10 +50,6 @@ def replay_task(url, sid, struct):
         c = move.ts - moves[i].ts
         m = moves[i].mv
         fsec = c.total_seconds()
-        # print "Processing move: ", m
-        # NOTE:  do not like the fact that a generic method "knows" about hand and simple move
-        # kind of move inside the DB. A refined version would be agnostic! In should send
-        # whatever found in DB entries, since each game is responsible to interpret its own data.
         m_struct = loads(m)
 
         if m_struct['move'] == 'HAND':
@@ -75,10 +71,9 @@ def replay_task(url, sid, struct):
         print "Waiting: %f seconds" % fsec
         sleep(fsec)
         i += 1
-        print i
         # send the last move:
         if i == len(moves) - 1:
-            print "send last move!"
+            print "Send last move!"
             local_socket.emit('replay', {'success': 'ok', 'hand': None,
                                          'move': m_struct,
                                          'next_move_at': fsec,
@@ -92,8 +87,7 @@ def replay_task(url, sid, struct):
 
 
 @celery.task()
-def bot_task(url, sid, hand, up, target, ck_history=None, nk_history=None, player_role='NK',
-             fake_delay=3.0, memory_size=4):
+def bot_task(url, sid, hand, up, target, player_role='NK', fake_delay=3.0, memory_size=2):
     """
     Play the TTT using a rule-based AI. Rules are in the file 'data/arules.txt'.
     This task process makes a single decision about the next move to play, then notifies to
@@ -111,10 +105,10 @@ def bot_task(url, sid, hand, up, target, ck_history=None, nk_history=None, playe
     :param hand: current card in player's (bot) hand
     :param up: card in UP position
     :param target: card in target position
-    :param ck_history: list of dictionaries representing the memory of ck actions
-    :param nk_history: list of dictionaries representing the memory of nk actions
     :param player_role: role played, default NK
     :param fake_delay: delay to mimic a human-like reply
+    :param memory_size: how many moves (per player) the bot can remember (e.g., 2 means: 2 bot
+    moves and 2 human player moves)
     """
     print "TTT bot started!"
     rulep = RuleParser()
@@ -122,7 +116,7 @@ def bot_task(url, sid, hand, up, target, ck_history=None, nk_history=None, playe
     local_socket = SocketIO(message_queue=url)
     # prev_state = {}
     # get the last game state from DB:
-    memory = Move.query.filter_by(sid=sid).order_by(Move.ts.desc()).limit(memory_size)
+    memory = Move.query.filter_by(sid=sid).order_by(Move.ts.desc()).limit(memory_size * 2)
     print "Memory: ", memory
     ck_history = [loads(x.mv) for x in memory if x.play_role == 'CK']
     nk_history = [loads(x.mv) for x in memory if x.play_role == 'NK']
@@ -205,7 +199,7 @@ def multiplayer_ready(message):
     """
     Called when 'multiplayer_ready' message is received. The background task is spawned.
 
-    :param message:
+    :param message: the message is considered having an empty payload
     :return:
     """
     serve_new_hand()
@@ -246,9 +240,6 @@ def login(message):
         emit('set_multiplayer', {})
 
     else:
-        # user_d[current_user.email] = Configuration(config_file=session['game_cfg']['shoe_file'])
-        # user_d[current_user.email].purgelines()
-
         serve_new_hand()
 
 
