@@ -31,7 +31,9 @@ admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
 
 path = os.path.join(os.path.dirname(__file__), 'data')
-admin.add_view(GGFileAdmin(path, '/data/', name='Data files'))
+# path += os.path.join(os.path.dirname(__file__), 'app/static')
+print path
+admin.add_view(GGFileAdmin(path, 'data/', name='Data files'))
 
 
 # define a context processor for merging flask-admin's template context into the

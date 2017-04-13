@@ -19,10 +19,10 @@ let username = '';
 let covered = null;  // whether or not covering cards
 let opponent_covered = false;
 let replay = false;  // support for replay of game sessions
-let multiplayer = false;    // support for multiplayer sessions
+let multiplayer = false;    // support for multi player sessions
 
 /*
-* Handlers for network messages over socket-io (websockets)
+* Handlers for network messages over socket-io (web-sockets)
 */
 let socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
@@ -44,6 +44,68 @@ socket.on('set_replay', handleSetReplay);
 socket.on('set_multiplayer', handleSetMultiplayer);
 socket.on('external_move', handleExternalMove);
 
+// Graph visualization:
+
+/* attach an "svg" div to the "graph" id in html and adds a few attributes to it */
+let vis = d3.select("#graph").append("svg");
+let w = 800, h = 480;
+vis.attr("width", w).attr("height", h);
+vis.text("The Graph").select("#graph");
+
+let sim = d3.forceSimulation();  // setup a force simulation object
+
+d3.json("/static/games/ttt/songs.json", function(error, data) {
+    if (error) throw error;
+
+    console.log("Data found: ",data);
+
+    // add "nodes" list to the simulation
+    sim.nodes(data["nodes"]);
+    // add force parameters:
+    sim
+    .force("charge_force", d3.forceManyBody())
+    .force("center_force", d3.forceCenter(w / 2, h / 2));
+
+    // Create the link force
+    // We need the id accessor to use named sources and targets
+    let link_force = d3.forceLink(data["links"])
+                        .id(function(d) { return d.id; });
+    sim.force("links", link_force);
+
+    /* list of graphical node elements to be attached to the "svg" element. They
+     * corresponds to the view part of the pattern */
+    let node = vis.append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+        .data(data["nodes"])
+        .enter()
+        .append("circle")
+        .attr("r", 5)
+        .attr("fill", "red");
+    /* physically draw links */
+    let link = vis.append("g").
+        attr("class", "links")
+        .selectAll("line")
+        .data(data["links"])
+        .enter().append("line")
+        .attr("stroke-width", 2);
+
+    sim.on("tick", tickActions);
+
+    function tickActions() {
+        //update circle positions to reflect node updates on each tick of the simulation
+        node
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
+
+        // update links:
+        link
+            .attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+    }
+});
 
 $(document).ready(function () {
 	/* initial card positions:
