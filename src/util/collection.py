@@ -1,10 +1,27 @@
+from graph_tool import Graph
+import string
+from networkx import read_graphml
+from networkx.readwrite import json_graph
+from json import dumps
+
 __author__ = 'Gian Paolo Jesi'
 """
 Collection of useful networks.
 """
 
-from graph_tool import Graph
-import string
+
+def graphml_to_json(graph_file, outfile):
+    """
+    Converts GraphML file to json. JSON output is usable with D3 force layout.
+
+    :param graph_file: graphml file
+    :param outfile: json output file
+    """
+    G = read_graphml(graph_file)
+    node_link = json_graph.node_link_data(G)
+    with open(outfile) as f:
+        f.write(dumps(node_link))
+
 
 def make_toy_graph(n=7,
                    tuples=[('a', 'b'), ('a', 'c'), ('a', 'd'), ('b', 'a'), ('b', 'd'), ('c', 'g'),

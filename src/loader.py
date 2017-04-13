@@ -1,10 +1,9 @@
-__author__ = 'Gian Paolo Jesi'
-
 from graph_tool.all import *
 from numpy.random import random
 import matplotlib as pl
 import ast
 
+__author__ = 'Gian Paolo Jesi'
 _MATLAB_CARD_LAYOUT = ("ck", "target", "nk", "dc", "up", "dn", "player")
 
 
