@@ -3,7 +3,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 
-class Config:
+class Config(object):
     SSL_DISABLE = True
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'itsasecret!'
     SECURITY_PASSWORD_HASH = 'bcrypt'
@@ -15,7 +15,7 @@ class Config:
     SECURITY_SEND_REGISTER_EMAIL = False
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     GRAPHGAMES_MAIL_SUBJECT_PREFIX = '[Graphgames]'
-    GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <do_not_reply@graphgames.com>'
+    GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <do_not_reply@graphgames.org>'
     GRAPHGAMES = os.environ.get('FLASKY_ADMIN')
     SOCKET_IO_PORT = 5000
     CELERY_BACKEND = os.environ.get('CELERY_BACKEND') or 'redis://localhost:6379/0'
@@ -58,8 +58,6 @@ class CeleryConfig(object):
     timezone = 'Europe/Rome'
     result_backend = 'redis://localhost:6379/0'
     broker_url = 'redis://localhost:6379/0'
-    # CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND') or \
-    #                        'redis://localhost:6379/0'
 
 
 config = {

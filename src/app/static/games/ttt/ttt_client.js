@@ -54,7 +54,7 @@ vis.text("The Graph").select("#graph");
 
 let sim = d3.forceSimulation();  // setup a force simulation object
 
-d3.json("/static/games/ttt/songs.json", function(error, data) {
+d3.json("/static/games/ttt/TTTg.json", function(error, data) {
     if (error) throw error;
 
     console.log("Data found: ",data);
@@ -69,8 +69,19 @@ d3.json("/static/games/ttt/songs.json", function(error, data) {
     // Create the link force
     // We need the id accessor to use named sources and targets
     let link_force = d3.forceLink(data["links"])
-                        .id(function(d) { return d.id; });
+                        .id(function(d) { return d.index; });
     sim.force("links", link_force);
+
+    // prepare the tip
+    let tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-10, 0])
+        .html(function(d) {
+            return "<strong>Status:</strong> <span style='color:red'> CK: " + d.ck + ", C: " +d.dn
+            +", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
+            "</span>";
+        })
+    vis.call(tip);
 
     /* list of graphical node elements to be attached to the "svg" element. They
      * corresponds to the view part of the pattern */
@@ -80,8 +91,16 @@ d3.json("/static/games/ttt/songs.json", function(error, data) {
         .data(data["nodes"])
         .enter()
         .append("circle")
-        .attr("r", 5)
-        .attr("fill", "red");
+        .attr("r", 10)
+        .attr("fill", "red")
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide);
+
+    node.append("text")
+        .attr("dx", -6)
+        .attr("dy", 6)
+        .text(function(d) { return d.id; });
+
     /* physically draw links */
     let link = vis.append("g").
         attr("class", "links")
@@ -91,6 +110,29 @@ d3.json("/static/games/ttt/songs.json", function(error, data) {
         .attr("stroke-width", 2);
 
     sim.on("tick", tickActions);
+
+    let drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
+
+    function drag_start(d) {
+        if (!d3.event.active) sim.alphaTarget(0.05).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function drag_drag(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function drag_end(d) {
+        if (!d3.event.active) sim.alphaTarget(0);
+        // d.fx = null;
+        // d.fy = null;
+        d.fx = d.x;  // makes the node sticky
+        d.fy = d.y;
+    }
+
+    drag_handler(node);
 
     function tickActions() {
         //update circle positions to reflect node updates on each tick of the simulation
