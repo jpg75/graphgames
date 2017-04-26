@@ -45,12 +45,6 @@ socket.on('set_multiplayer', handleSetMultiplayer);
 socket.on('external_move', handleExternalMove);
 
 // Graph visualization:
-
-/* attach an "svg" div to the "graph" id in html and adds a few attributes to it */
-let margin = {top: -5, right: -5, bottom: -5, left: -5},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
 let w = 800, h = 480;
 let min_zoom = 0.01;
 let max_zoom = 100;
@@ -59,7 +53,6 @@ let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
 vis.text("The Graph").select("#graph");
 
 let sim = d3.forceSimulation();  // setup a force simulation object
-
 
 d3.json("/static/games/ttt/TTTg.json", function(error, data) {
     if (error) throw error;
@@ -100,7 +93,7 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
      */
     let g = vis.append("g").attr("class", "everything");
 
-   /* physically draw links */
+    /* physically draw links */
     let link = g.append("g").
         attr("class", "links")
         .selectAll("line")
@@ -119,8 +112,8 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
         .attr("cy", function(d) {return(d.y)})
         .attr("r", 10)
         .attr("fill", "red")
-        .on('mouseover', tip.show)
-        .on('mouseout', tip.hide);
+        .on('mouseover', emphasizeNode)
+        .on('mouseout', deemphasizeNode);
 
     sim.on("tick", tickActions);
 
@@ -139,8 +132,6 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
 
     function drag_end(d) {
         if (!d3.event.active) sim.alphaTarget(0);
-        // d.fx = null;
-        // d.fy = null;
         d.fx = d.x;  // makes the node sticky
         d.fy = d.y;
     }
@@ -165,6 +156,15 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
         g.attr("transform", d3.event.transform);
     }
 
+    function emphasizeNode(d) {
+        tip.show(d);
+        d3.select(this).attr("r", 13).style("fill", "yellow");
+    }
+
+    function deemphasizeNode(d) {
+        tip.hide(d);
+        d3.select(this).attr("r", 10).style("fill", "red");
+    }
 });
 
 $(document).ready(function () {
