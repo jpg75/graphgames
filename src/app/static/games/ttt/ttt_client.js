@@ -47,12 +47,19 @@ socket.on('external_move', handleExternalMove);
 // Graph visualization:
 
 /* attach an "svg" div to the "graph" id in html and adds a few attributes to it */
-let vis = d3.select("#graph").append("svg");
+let margin = {top: -5, right: -5, bottom: -5, left: -5},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
 let w = 800, h = 480;
-vis.attr("width", w).attr("height", h);
+let min_zoom = 0.01;
+let max_zoom = 100;
+
+let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
 vis.text("The Graph").select("#graph");
 
 let sim = d3.forceSimulation();  // setup a force simulation object
+
 
 d3.json("/static/games/ttt/TTTg.json", function(error, data) {
     if (error) throw error;
@@ -81,33 +88,39 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
             +", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
             "</span>";
         })
+
+    let zoom_handler= d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
+
     vis.call(tip);
+    vis.call(zoom_handler);
 
     /* list of graphical node elements to be attached to the "svg" element. They
-     * corresponds to the view part of the pattern */
-    let node = vis.append("g")
-        .attr("class", "nodes")
-        .selectAll("circle")
-        .data(data["nodes"])
-        .enter()
-        .append("circle")
-        .attr("r", 10)
-        .attr("fill", "red")
-        .on('mouseover', tip.show)
-        .on('mouseout', tip.hide);
+     * corresponds to the view part of the pattern. By having a "g" main container for node and
+     * inks we can easily apply transformations to the whole graph.
+     */
+    let g = vis.append("g").attr("class", "everything");
 
-    node.append("text")
-        .attr("dx", -6)
-        .attr("dy", 6)
-        .text(function(d) { return d.id; });
-
-    /* physically draw links */
-    let link = vis.append("g").
+   /* physically draw links */
+    let link = g.append("g").
         attr("class", "links")
         .selectAll("line")
         .data(data["links"])
         .enter().append("line")
         .attr("stroke-width", 2);
+
+    /* physically draw nodes */
+    let node = g.append("g")
+        .attr("class", "nodes")
+        .selectAll("circle")
+        .data(data["nodes"])
+        .enter()
+        .append("circle")
+        .attr("cx", function(d) {return(d.x)})
+        .attr("cy", function(d) {return(d.y)})
+        .attr("r", 10)
+        .attr("fill", "red")
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide);
 
     sim.on("tick", tickActions);
 
@@ -135,18 +148,23 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
     drag_handler(node);
 
     function tickActions() {
-        //update circle positions to reflect node updates on each tick of the simulation
-        node
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; })
-
         // update links:
         link
             .attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
             .attr("y2", function(d) { return d.target.y; });
+
+        //update circle positions to reflect node updates on each tick of the simulation
+        node
+            .attr("cx", function(d) { return d.x; })
+            .attr("cy", function(d) { return d.y; })
     }
+
+    function zoom_actions(){
+        g.attr("transform", d3.event.transform);
+    }
+
 });
 
 $(document).ready(function () {
@@ -572,3 +590,9 @@ function sendMove(move, moved_card) {
 	} );
 }
 
+/**
+* Update the visual graph model according to the move or hand received.
+*/
+function updateVis(move){
+    ;
+}
