@@ -77,12 +77,13 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
         .attr('class', 'd3-tip')
         .offset([-10, 0])
         .html(function(d) {
-            return "<strong>Status:</strong> <span style='color:red'> CK: " + d.ck + ", C: " +d.dn
-            +", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
+            return "<strong>Status:</strong> <span style='color:yellow'> CK: " + d.ck + ", C: "
+            + d.dn
+            + ", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
             "</span>";
         })
 
-    let zoom_handler= d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
+    let zoom_handler = d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
 
     vis.call(tip);
     vis.call(zoom_handler);
@@ -115,6 +116,9 @@ d3.json("/static/games/ttt/TTTg.json", function(error, data) {
         .on('mouseover', emphasizeNode)
         .on('mouseout', deemphasizeNode);
 
+    d3.selectAll('.node').each(function(d) {
+        d.element = this;
+    });
     sim.on("tick", tickActions);
 
     let drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
