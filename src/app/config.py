@@ -13,6 +13,7 @@ class Config(object):
     SECURITY_REGISTERABLE = True
     SECURITY_CHANGEABLE = True
     SECURITY_SEND_REGISTER_EMAIL = False
+    PORT = 5000
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True
     GRAPHGAMES_MAIL_SUBJECT_PREFIX = '[Graphgames]'
     GRAPHGAMES_MAIL_SENDER = 'Graphgames Admin <do_not_reply@graphgames.org>'

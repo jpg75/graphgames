@@ -5,7 +5,7 @@ from flask import url_for
 from app import db, socket_io, app, admin
 from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, GGFileAdmin
 from app.models import User, Role, Move, GameSession, GameType, user_datastore, init_db
-from flask_script import Manager, Shell
+from flask_script import Manager, Shell, Server
 from flask_migrate import Migrate, MigrateCommand
 from flask_security import Security, user_registered
 from flask_admin import helpers as admin_helpers
@@ -59,7 +59,7 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def run():
-    socket_io.run(app, port=app.config['SOCKET_IO_PORT'], debug=True)
+    socket_io.run(app, host='0.0.0.0', port=app.config['SOCKET_IO_PORT'])
 
 
 @manager.command
