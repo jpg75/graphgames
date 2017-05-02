@@ -12,3 +12,5 @@ fi
 
 source flaskenv/bin/activate
 python ./manage.py run
+
+deactivate
