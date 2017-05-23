@@ -54,122 +54,122 @@ vis.text("The Graph").select("#graph");
 
 let sim = d3.forceSimulation();  // setup a force simulation object
 
-d3.json("/static/games/ttt/TTTg.json", function(error, data) {
-    if (error) throw error;
-
-    console.log("Data found: ",data);
-
-    // add "nodes" list to the simulation
-    sim.nodes(data["nodes"]);
-    // add force parameters:
-    sim
-    .force("charge_force", d3.forceManyBody())
-    .force("center_force", d3.forceCenter(w / 2, h / 2));
-
-    // Create the link force
-    // We need the id accessor to use named sources and targets
-    let link_force = d3.forceLink(data["links"])
-                        .id(function(d) { return d.index; });
-    sim.force("links", link_force);
-
-    // prepare the tip
-    let tip = d3.tip()
-        .attr('class', 'd3-tip')
-        .offset([-10, 0])
-        .html(function(d) {
-            return "<strong>Status:</strong> <span style='color:yellow'> CK: " + d.ck + ", C: "
-            + d.dn
-            + ", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
-            "</span>";
-        })
-
-    let zoom_handler = d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
-
-    vis.call(tip);
-    vis.call(zoom_handler);
-
-    /* list of graphical node elements to be attached to the "svg" element. They
-     * corresponds to the view part of the pattern. By having a "g" main container for node and
-     * inks we can easily apply transformations to the whole graph.
-     */
-    let g = vis.append("g").attr("class", "everything");
-
-    /* physically draw links */
-    let link = g.append("g").
-        attr("class", "links")
-        .selectAll("line")
-        .data(data["links"])
-        .enter().append("line")
-        .attr("stroke-width", 2);
-
-    /* physically draw nodes */
-    let node = g.append("g")
-        .attr("class", "nodes")
-        .selectAll("circle")
-        .data(data["nodes"])
-        .enter()
-        .append("circle")
-        .attr("cx", function(d) {return(d.x)})
-        .attr("cy", function(d) {return(d.y)})
-        .attr("r", 10)
-        .attr("fill", "red")
-        .on('mouseover', emphasizeNode)
-        .on('mouseout', deemphasizeNode);
-
-    d3.selectAll('.node').each(function(d) {
-        d.element = this;
-    });
-    sim.on("tick", tickActions);
-
-    let drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
-
-    function drag_start(d) {
-        if (!d3.event.active) sim.alphaTarget(0.05).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-    }
-
-    function drag_drag(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-    }
-
-    function drag_end(d) {
-        if (!d3.event.active) sim.alphaTarget(0);
-        d.fx = d.x;  // makes the node sticky
-        d.fy = d.y;
-    }
-
-    drag_handler(node);
-
-    function tickActions() {
-        // update links:
-        link
-            .attr("x1", function(d) { return d.source.x; })
-            .attr("y1", function(d) { return d.source.y; })
-            .attr("x2", function(d) { return d.target.x; })
-            .attr("y2", function(d) { return d.target.y; });
-
-        //update circle positions to reflect node updates on each tick of the simulation
-        node
-            .attr("cx", function(d) { return d.x; })
-            .attr("cy", function(d) { return d.y; })
-    }
-
-    function zoom_actions(){
-        g.attr("transform", d3.event.transform);
-    }
-
-    function emphasizeNode(d) {
-        tip.show(d);
-        d3.select(this).attr("r", 13).style("fill", "yellow");
-    }
-
-    function deemphasizeNode(d) {
-        tip.hide(d);
-        d3.select(this).attr("r", 10).style("fill", "red");
-    }
-});
+//d3.json("/static/games/ttt/TTTg.json", function(error, data) {
+//    if (error) throw error;
+//
+//    console.log("Data found: ",data);
+//
+//    // add "nodes" list to the simulation
+//    sim.nodes(data["nodes"]);
+//    // add force parameters:
+//    sim
+//    .force("charge_force", d3.forceManyBody())
+//    .force("center_force", d3.forceCenter(w / 2, h / 2));
+//
+//    // Create the link force
+//    // We need the id accessor to use named sources and targets
+//    let link_force = d3.forceLink(data["links"])
+//                        .id(function(d) { return d.index; });
+//    sim.force("links", link_force);
+//
+//    // prepare the tip
+//    let tip = d3.tip()
+//        .attr('class', 'd3-tip')
+//        .offset([-10, 0])
+//        .html(function(d) {
+//            return "<strong>Status:</strong> <span style='color:yellow'> CK: " + d.ck + ", C: "
+//            + d.dn
+//            + ", T: "+ d.target + ", U: " + d.up +", NK: " + d.nk +", N: "+ d.dn+
+//            "</span>";
+//        })
+//
+//    let zoom_handler = d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
+//
+//    vis.call(tip);
+//    vis.call(zoom_handler);
+//
+//    /* list of graphical node elements to be attached to the "svg" element. They
+//     * corresponds to the view part of the pattern. By having a "g" main container for node and
+//     * inks we can easily apply transformations to the whole graph.
+//     */
+//    let g = vis.append("g").attr("class", "everything");
+//
+//    /* physically draw links */
+//    let link = g.append("g").
+//        attr("class", "links")
+//        .selectAll("line")
+//        .data(data["links"])
+//        .enter().append("line")
+//        .attr("stroke-width", 2);
+//
+//    /* physically draw nodes */
+//    let node = g.append("g")
+//        .attr("class", "nodes")
+//        .selectAll("circle")
+//        .data(data["nodes"])
+//        .enter()
+//        .append("circle")
+//        .attr("cx", function(d) {return(d.x)})
+//        .attr("cy", function(d) {return(d.y)})
+//        .attr("r", 10)
+//        .attr("fill", "red")
+//        .on('mouseover', emphasizeNode)
+//        .on('mouseout', deemphasizeNode);
+//
+//    d3.selectAll('.node').each(function(d) {
+//        d.element = this;
+//    });
+//    sim.on("tick", tickActions);
+//
+//    let drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
+//
+//    function drag_start(d) {
+//        if (!d3.event.active) sim.alphaTarget(0.05).restart();
+//        d.fx = d.x;
+//        d.fy = d.y;
+//    }
+//
+//    function drag_drag(d) {
+//        d.fx = d3.event.x;
+//        d.fy = d3.event.y;
+//    }
+//
+//    function drag_end(d) {
+//        if (!d3.event.active) sim.alphaTarget(0);
+//        d.fx = d.x;  // makes the node sticky
+//        d.fy = d.y;
+//    }
+//
+//    drag_handler(node);
+//
+//    function tickActions() {
+//        // update links:
+//        link
+//            .attr("x1", function(d) { return d.source.x; })
+//            .attr("y1", function(d) { return d.source.y; })
+//            .attr("x2", function(d) { return d.target.x; })
+//            .attr("y2", function(d) { return d.target.y; });
+//
+//        //update circle positions to reflect node updates on each tick of the simulation
+//        node
+//            .attr("cx", function(d) { return d.x; })
+//            .attr("cy", function(d) { return d.y; })
+//    }
+//
+//    function zoom_actions(){
+//        g.attr("transform", d3.event.transform);
+//    }
+//
+//    function emphasizeNode(d) {
+//        tip.show(d);
+//        d3.select(this).attr("r", 13).style("fill", "yellow");
+//    }
+//
+//    function deemphasizeNode(d) {
+//        tip.hide(d);
+//        d3.select(this).attr("r", 10).style("fill", "red");
+//    }
+//});
 
 $(document).ready(function () {
 	/* initial card positions:
