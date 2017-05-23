@@ -1,8 +1,10 @@
+from os import environ
 from flask import Flask
 from celery import Celery
 from flask_sqlalchemy import SQLAlchemy
 from flask_admin import Admin
 from flask_socketio import SocketIO
+from flask_sslify import SSLify
 from config import config
 from csv import writer
 from io import BytesIO
@@ -10,8 +12,11 @@ from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 from time import time, localtime
 from os.path import join, dirname, abspath, sep
 from json import loads
+from gevent import monkey
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+monkey.patch_all()
 
 
 def loadFile(fqn_file):
@@ -102,7 +107,6 @@ def csv2string(data):
 
 
 db = SQLAlchemy()
-socket_io = SocketIO()
 
 
 def make_zip(file_list):
@@ -154,20 +158,24 @@ def create_app(cfg):
     config[cfg].init_app(app)
     db.init_app(app)
 
-    socket_io.init_app(app, message_queue='redis://localhost:6379/0')
+    # socket_io.init_app(app, message_queue='redis://localhost:6379/0')
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
     if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
-        from flask_sslify import SSLify
-        sslify = SSLify(app)
+        print "Starting SSL!"
+        SSLify(app)
+        pass
 
     return app
 
 
 celery = make_celery()
-app = create_app(cfg='default')
+env = environ.get('DEFAULT_WEB_APP') or 'default'
+print "Starting app with %s configuration object" % env
+app = create_app(cfg=env)
+socket_io = SocketIO(app, message_queue='redis://localhost:6379/0')
 celery.config_from_object(config['celery'])
 
 from views import MyHomeView

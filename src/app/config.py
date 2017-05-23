@@ -23,6 +23,14 @@ class Config(object):
     CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL') or 'redis://localhost:6379/0'
     CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND') or \
                             'redis://localhost:6379/0'
+    MAIL_SERVER = 'smtp.googlemail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
+                              'sqlite:///' + os.path.join(basedir,
+                                                          'data.sqlite')
 
     @staticmethod
     def init_new_deploy():
@@ -36,22 +44,11 @@ class Config(object):
 class DevelopmentConfig(Config):
     DEBUG = True
 
-    MAIL_SERVER = 'smtp.googlemail.com'
-    MAIL_PORT = 587
-    MAIL_USE_TLS = True
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or \
-                              'sqlite:///' + os.path.join(basedir,
-                                                          'data.sqlite')
-
 
 class ProductionConfig(DevelopmentConfig):
     DEBUG = False
-
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-                              'sqlite:///' + os.path.join(basedir,
-                                                          'data.sqlite')
+    PORT = 80
+    SOCKET_IO_PORT = 80
 
 
 class CeleryConfig(object):

@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os
+from os import path
 from flask import url_for
 from app import db, socket_io, app, admin
 from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, GGFileAdmin
@@ -10,7 +10,7 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_security import Security, user_registered
 from flask_admin import helpers as admin_helpers
 
-cfg = os.getenv('FLASK_CONFIG') or 'default'
+# cfg = os.getenv('FLASK_CONFIG') or 'default'
 
 manager = Manager(app)
 migrate = Migrate(app, db)
@@ -30,10 +30,10 @@ admin.add_view(UserAdminView(User, db.session, name='Users'))
 admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
 
-path = os.path.join(os.path.dirname(__file__), 'data')
-# path += os.path.join(os.path.dirname(__file__), 'app/static')
-print path
-admin.add_view(GGFileAdmin(path, 'data/', name='Data files'))
+mypath = path.join(path.dirname(__file__), 'data')
+# path += path.join(path.dirname(__file__), 'app/static')
+print mypath
+admin.add_view(GGFileAdmin(mypath, 'data/', name='Data files'))
 
 
 # define a context processor for merging flask-admin's template context into the
