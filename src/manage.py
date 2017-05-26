@@ -10,8 +10,6 @@ from flask_migrate import Migrate, MigrateCommand
 from flask_security import Security, user_registered
 from flask_admin import helpers as admin_helpers
 
-# cfg = os.getenv('FLASK_CONFIG') or 'default'
-
 manager = Manager(app)
 migrate = Migrate(app, db)
 
@@ -59,8 +57,11 @@ manager.add_command('db', MigrateCommand)
 
 @manager.command
 def run():
-    socket_io.run(app, host='0.0.0.0', port=app.config['SOCKET_IO_PORT'])
-
+    if not app.config['SSL_DISABLE']:
+        socket_io.run(app, host='0.0.0.0', port=app.config['SOCKET_IO_PORT'],
+                      certfile='ca.crt', keyfile='ca.key')
+    else:
+        socket_io.run(app, host='0.0.0.0', port=app.config['SOCKET_IO_PORT'])
 
 @manager.command
 def populate():
