@@ -177,8 +177,8 @@ class SessionAdminView(GGBasicAdminView):
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-repeat', '/admin/replay/{row_id}',
                       title='Replay'),
-        LinkRowAction('glyphicon glyphicon-tree-conifer', '/admin/',
-                      title='Show graph')
+        # LinkRowAction('glyphicon glyphicon-tree-conifer', '/admin/',
+        #              title='Show graph')
     ]
 
     @action('download', 'Download', 'Are you sure you want to download selected session data?')
