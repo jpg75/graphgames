@@ -8,7 +8,7 @@ from flask_admin.contrib.fileadmin import FileAdmin
 from flask_admin.form import SecureForm
 from flask_security import current_user
 from datetime import datetime
-from . import aggregate_moves, make_zip, db
+from . import aggregate_moves, make_zip, db, csv2string
 from json import loads
 
 
@@ -181,7 +181,8 @@ class SessionAdminView(GGBasicAdminView):
         #              title='Show graph')
     ]
 
-    @action('download', 'Download', 'Are you sure you want to download selected session data?')
+    @action('download', 'Download (Nemik format)', 'Are you sure you want to download selected '
+                                                   'session data in Nemik format?')
     def action_download(self, ids):
         try:
             from models import Move
@@ -217,3 +218,32 @@ class SessionAdminView(GGBasicAdminView):
 
             flash('Failed to download session data')
 
+    @action('download_csv', 'Download (CSV format)', 'Are you sure you want to download '
+                                                     'selected '
+                                                     'session data in CSV format?')
+    def action_download_csv(self, ids):
+        try:
+            from models import Move
+
+            moves = Move.query.filter(Move.sid.in_(ids)).all()
+            line = csv2string(['ID', 'UID', 'SID', 'MOVE', 'PLAY_ROLE', 'TIME_STAMP']) + '\n'
+            for move in moves:
+                line += csv2string([move.id, move.uid, move.sid]) + ',' + move.mv + ',' \
+                                                                                    '' + csv2string(
+                    [move.play_role, move.ts]) + '\n'
+                '\n'
+
+            files = [{'file_name': 'output.txt',
+                      'file_data': line
+                      }
+                     ]
+
+            zf = make_zip(files)
+            flash('Sessions were successfully downloaded.')
+            return send_file(zf, attachment_filename='CSV_output.zip',
+                             as_attachment=True)
+
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+            flash('Failed to download session data')
