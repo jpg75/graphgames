@@ -2,9 +2,17 @@
 
 {% block body %}
 {% if current_user.is_authenticated %}
-<h1>Hello {{current_user.email}}, welcome back!</h1>
+<div><h1>Hello {{current_user.email}}, welcome back to Graphgames!</h1></div>
 
-<h1><p>Please, choose any game to play:</p>
+<div>
+    <h1>If you want to know more about our platform or need help, please download our
+        manual:
+        <a href="{{
+           url_for('static', filename="GraphGames_user_manual.pdf", _external=True)
+        }}">Graphgames_User_Manual.pdf</a></h1>
+</div>
+
+<div><h1><p>Please, choose any game to play:</p>
     <ul>
         {% for game in games %}
         <li><a href="{{ url_for('admin.play_game', game_id=game) }}">{{ games[game]
@@ -12,16 +20,18 @@
         {% endfor %}
     </ul>
 </h1>
+</div>
 
 {% else %}
 
+<div>
 <h1>
     <p>Hello Stranger!</p>
 </h1>
 <h2><p>Please <a href="{{ url_for('security.login') }}">Login</a> or <a
         href="{{ url_for('security.register') }}">Register</a> to play our games.</p>
 </h2>
-
+</div>
 {% endif %}
 
 {% endblock %}
