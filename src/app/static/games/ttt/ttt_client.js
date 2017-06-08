@@ -43,6 +43,22 @@ socket.on('replay', handleReplay);
 socket.on('set_replay', handleSetReplay);
 socket.on('set_multiplayer', handleSetMultiplayer);
 socket.on('external_move', handleExternalMove);
+socket.on('join', function(message) {
+    console.log(message['room']);
+    socket.join(message['room']);
+    }
+);
+socket.on('set_player', handleSetPlayer);
+socket.on('abort_multiplayer', function(message) {
+    console.log('Multiplayer aborted.')
+    if (message['comment']) {
+        window.alert('Multiplayer session aborted: '+ message['comment']);
+    }
+	else {
+	    window.alert('Sorry, multiplayer session failed or timed out: please try again.');
+	}
+}
+);
 
 // Graph visualization:
 let w = 800, h = 480;
@@ -416,6 +432,8 @@ function login() {
 	socket.emit('login', {'username': ''});
 }
 
+// function handleJoin
+
 /**
 * Receive the next game hand in json format.
 * NOTE: replicated code as in initCardsData() : solve it !
@@ -444,9 +462,9 @@ function handleHand(message) {
 			goalCard = val;
 		}
 		else if (card == 'PL') {  // set player turn
-		    /* NOTE: ths is the only case (in play mode) in which we call invertPlayers directly
-		    since we do not
-		    receive a 'toggle_players' message after a move that closes the current hand */
+		    /* NOTE: this is the only case (in play mode) in which we call invertPlayers directly
+		    since we do not receive a 'toggle_players' message after a move that
+		    closes the current hand */
 		    if (val != player)
 		        invertPlayers($("#" + card));  // NEVER touch player var directly!
 		}
@@ -460,6 +478,14 @@ function handleHand(message) {
 	// $.fx.off = false;  // enable ALL animations
 }
 
+/**
+* Handle an explicit player setting.
+*/
+function handleSetPlayer(message) {
+    console.log("Set to player: " + message['player']);
+    player = message['player'];
+    makeDraggable();
+}
 
 /**
 * Handle the 'toggle_players' message and inverts the players. The player turn in managed by the
