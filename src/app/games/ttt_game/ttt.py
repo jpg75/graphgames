@@ -8,11 +8,13 @@ from ...models import Move, GameSession, User
 from json import dumps, loads
 from time import sleep
 from ... import celery
+from celery.contrib.abortable import AbortableTask
 from parser import RuleParser
 from collections import deque
 from random import uniform
 
-user_d = dict()  # maps user names to Session objects
+user_d = dict()  # maps user names to game configuration session objects
+clients = dict()  # maps user names to ws connection
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 history_record = {'move': '',
                   # card in the hand of the current player: in 'NK' position if it is
@@ -22,8 +24,13 @@ history_record = {'move': '',
                   'target': ''}
 
 
-@celery.task()
-def replay_task(url, sid, struct):
+@celery.task(bind=True, base=AbortableTask)
+def timeout_task(self):
+    pass
+
+
+@celery.task(bind=True, base=AbortableTask)
+def replay_task(self, url, sid, struct):
     """
     Generate a local web socket linked to the queue url. The task process is tied to this
     communication link for its lifespan.
@@ -47,6 +54,9 @@ def replay_task(url, sid, struct):
     i = 0
     # send all moves one by one
     for move in moves[1:]:
+        if self.is_aborted:
+            return
+
         c = move.ts - moves[i].ts
         m = moves[i].mv
         fsec = c.total_seconds()
@@ -70,6 +80,10 @@ def replay_task(url, sid, struct):
 
         print "Waiting: %f seconds" % fsec
         sleep(fsec)
+
+        if self.is_aborted:
+            return
+
         i += 1
         # send the last move:
         if i == len(moves) - 1:
@@ -83,6 +97,8 @@ def replay_task(url, sid, struct):
 
     sleep(5.0)  # by default wait half second before quitting the game
     local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
+    session.pop('replay_bot', None)
+
     print "Game over."
 
 
@@ -114,7 +130,6 @@ def bot_task(url, sid, hand, up, target, player_role='NK', fake_delay=3.0, memor
     rulep = RuleParser()
     rulep.load_rules()
     local_socket = SocketIO(message_queue=url)
-    # prev_state = {}
     # get the last game state from DB:
     memory = Move.query.filter_by(sid=sid).order_by(Move.ts.desc()).limit(memory_size * 2)
     print "Memory: ", memory
@@ -186,11 +201,11 @@ def replay_ready(message):
     """
     Called when 'replay_ready' message is received. The background task is spawned.
 
-    :return:
     """
     # here start the background thread for replay session:
-    replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
-                      struct=session['game_cfg'])
+    replay_bot = replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+                                   struct=session['game_cfg'])
+    session['replay_bot'] = replay_bot
 
 
 @socket_io.on('multiplayer_ready')
@@ -200,16 +215,19 @@ def multiplayer_ready(message):
     Called when 'multiplayer_ready' message is received. The background task is spawned.
 
     :param message: the message is considered having an empty payload
-    :return:
     """
-    serve_new_hand()
+    if session['game_cfg']['enable_bot']:
+        serve_new_hand()
+
+    else:  # manage the wait or start teh game between the parties
+        pass
 
 
 @socket_io.on('login')
 @authenticated_only
 def login(message):
     """
-    The actual login is carried out by the web app through flask_login.
+    The actual user login is carried out by the web app through flask_login.
     Here the login represents a sort of confirmation.
     It replies with a 'game response' message holding everything required
     to start the game:
@@ -218,8 +236,7 @@ def login(message):
     + covered cards: which card must be covered
     + opponent_covered: whether the current player opponent must be covered or not
 
-    :param message: json message with proposed username. No real auth.
-    :return:
+    :param message: json message with proposed username. No real auth
     """
     if not current_user.is_authenticated:
         return
@@ -293,15 +310,20 @@ def move(message):
 @socket_io.on('connect')
 @authenticated_only
 def test_connect():
-    print "A client connected"
+    print "A client connected: %s" % (request.namespace)
+    clients[current_user.email] = request.namespace
+    print clients
 
 
 @socket_io.on('disconnect')
 @authenticated_only
 def test_disconnect():
     user_d.pop(current_user.email, None)  # remove user from connected users
+    if 'replay_bot' in session:  # terminate a replay bot if any
+        session['replay_bot'].abort()
 
-    print('Client disconnected', request.sid)
+    clients.pop(current_user.email, None)
+    print('Client disconnected ', request.namespace)
 
 
 def serve_new_hand():

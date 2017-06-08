@@ -95,7 +95,7 @@ class Move(db.Model):
 
 
 class GameSession(db.Model):
-    __tableName__ = 'game_sessions'
+    __tablename__ = 'game_sessions'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
     type = db.Column(db.Integer, db.ForeignKey('game_types.id'))
@@ -126,6 +126,8 @@ class GameType(db.Model):
              'replay': False,
              'enable_multiplayer': False,
              'enable_bot': False,
+             'min_users': 2,
+             'max_users': 2,
              'opponent_covered': True,
              'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                          'CK': False, 'T': False}}),
@@ -135,6 +137,8 @@ class GameType(db.Model):
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
+                 'min_users': 2,
+                 'max_users': 2,
                  'opponent_covered': False,
                  'covered': {'NK': False, 'N': True, 'U': False,
                              'C': True, 'CK': False, 'T': False}}),
@@ -144,6 +148,8 @@ class GameType(db.Model):
                  'replay': False,
                  'enable_bot': True,
                  'enable_multiplayer': True,
+                 'min_users': 2,
+                 'max_users': 2,
                  'covered': {'CK': False, 'C': True, 'NK': False,
                              'N': True, 'U': False, 'T': False},
                  'opponent_covered': True}

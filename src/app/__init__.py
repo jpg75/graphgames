@@ -73,13 +73,14 @@ def aggregate_moves(moves, sids):
     sid_data = dict([(x, {}) for x in sids])  # maps <sid> -> { <hand> -> [seq] }
     FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
 
+    # NOTE: moves must be sorted by sid before being here!
     for move in moves:
         d = loads(move.mv)
         if d['move'] == 'HAND':
             # d = loads(move.mv.replace('HAND', ''))
             current_hand = ' '.join(d['panel'][x] for x in FILE_ORDER)
-            if not current_hand in unique_hands:
-                # print "current hand:",current_hand
+            if current_hand not in unique_hands:
+                # print "current hand:", current_hand
                 unique_hands.append(current_hand)
             else:
                 current_hand = ' '.join(d['panel'][x] for x in FILE_ORDER)
@@ -87,6 +88,7 @@ def aggregate_moves(moves, sids):
             current_move = loads(move.mv)['move']
             if current_hand in sid_data[str(move.sid)]:  # hand exists for this sid
                 sid_data[str(move.sid)][current_hand].append(current_move)
+
             else:  # hand does not exists and thus the linked list
                 sid_data[str(move.sid)][current_hand] = [current_move]
 

@@ -187,7 +187,7 @@ class SessionAdminView(GGBasicAdminView):
         try:
             from models import Move
 
-            moves = Move.query.filter(Move.sid.in_(ids)).all()
+            moves = Move.query.filter(Move.sid.in_(ids)).order_by(Move.sid).all()
             data, hands = aggregate_moves(moves, ids)
 
             line = ''
@@ -225,7 +225,7 @@ class SessionAdminView(GGBasicAdminView):
         try:
             from models import Move
 
-            moves = Move.query.filter(Move.sid.in_(ids)).all()
+            moves = Move.query.filter(Move.sid.in_(ids)).order_by(Move.sid).all()
             line = csv2string(['ID', 'UID', 'SID', 'MOVE', 'PLAY_ROLE', 'TIME_STAMP']) + '\n'
             for move in moves:
                 line += csv2string([move.id, move.uid, move.sid]) + ',' + move.mv + ',' \
