@@ -4,19 +4,21 @@ from flask_security import current_user
 from flask_socketio import SocketIO, emit
 from flask import request, session
 from datetime import datetime
-from ...models import Move, GameSession, User
+from ...models import Move, GameSession, User, MPSession
 from json import dumps, loads
 from time import sleep
 from ... import celery
-from celery.contrib.abortable import AbortableTask
+from celery.contrib.abortable import AbortableTask, Task
 from parser import RuleParser
 from collections import deque
 from random import uniform
+from redis import Redis
+import requests
 
 user_d = dict()  # maps user names to game configuration session objects
 clients = dict()  # maps user names to ws connection
-mp_table = dict()  # maps game id to a list of tuples. Each tuple holds: uid, sid,
-# task-ref
+# maps game id to a tuple: game_id -> (task-ref, [(uid, sid), ...] )
+mp_table = dict()
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 #####################################
@@ -31,10 +33,71 @@ history_record = {'move': '',
 
 #####################################
 
+class NotifierTask(Task):
+    """Task that sends notification on completion."""
+    abstract = True
 
-@celery.task(bind=True, base=AbortableTask)
-def timeout_task(self, url, sid, struct):
-    pass
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        url = 'http://localhost:5000/admin/notify_mp'
+        data = {'result': retval}
+        requests.post(url, data=data)
+
+
+@celery.task(bind=True)
+def timeout_task(self, url, gid, sid, struct):
+    """
+        Generate a local web socket linked to the queue url. The task process is tied to this
+        communication link for its lifespan.
+        Takes all the element of a game session and sends back to the client the exact sequence of
+        events scheduling them with the exact timing.
+        The code is verbose using print statements. They are visible through the celery worker
+        console in debug mode.
+
+        :param url: A (Redis) queue url
+        :param gid: game id of the (multi-player) game associated
+        :param sid: session ID
+        :param struct: dictionary with game instance parameters
+        :return:
+        """
+    print "inside timeout task"
+    conn = Redis()
+    # mpt = conn.hgetall("mp_table")
+    mpt = loads(conn.get('mp_table'))
+    result = {'gid': gid,
+              'groups': [],
+              'failed': []
+              }
+    print "mpt: ", mpt
+    # local_socket = SocketIO(message_queue=url)
+    sleep(5)
+    print "exit from sleep"
+
+    # making groups:
+    for game_id in mpt:
+        print "game_id: -%s-, gid: -%s-" % (game_id, gid)
+        if int(game_id) == int(gid):  # the timer is just for this game id, skip the others!
+            l = mpt[game_id]
+            print "l: ", l
+            groups = [l[i:i + struct['max_users']] for i in xrange(0, len(l), struct['max_users'])]
+            print "groups: ", groups
+            for group in groups:
+                print "group: ", group
+                sids = ' '.join(str(x[1] for x in group))
+                users = ' '.join(str(x[0] for x in group))
+
+                if len(group) <= struct['max_users'] and len(group) >= struct['min_users']:
+                    result['groups'].append(group)
+
+                    mps = MPSession(gid=game_id, sids=sids, users=users)
+                    db.session.add(mps)
+                else:
+                    result['failed'].append(group)
+
+            db.session.commit()
+        else:
+            print "NOT EQUAL!"
+
+    return result
 
 
 @celery.task(bind=True, base=AbortableTask)
@@ -227,15 +290,24 @@ def multiplayer_ready(message):
     if session['game_cfg']['enable_bot']:
         serve_new_hand()
 
-    else:  # manage the wait or start teh game between the parties
+    else:  # manage the wait or start the game between the parties
+        conn = Redis()
         mpgdef = mp_table.get(session['game_type'], None)
+        print "mpgdef: ", mpgdef
         if mpgdef:  # already exist, append
-            mpgdef[1].append((current_user, session['game_session']))
+            mpgdef.append((current_user.id, session['game_session']))
+            conn.hmset('mp_table', mp_table)
+
         else:  # make a new entry:
-            wait_task = timeout_task(url='redis://localhost:6379/0', sid=session['game_session'],
-                                     struct=session['game_cfg'])
-            mp_table[session['game_type']] = (wait_task, [(current_user, session['game_session'])])
-            wait_task.delay()   # start waiting task
+            mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
+            # conn.hmset('mp_table', mp_table)
+            conn.set('mp_table', dumps(mp_table))
+            # wait_task = \
+            timeout_task.delay(url='redis://localhost:6379/0', gid=session['game_type'],
+                               sid=session['game_session'],
+                               struct=session['game_cfg'])
+
+            # wait_task.delay()  # start waiting task
 
 
 @socket_io.on('login')
