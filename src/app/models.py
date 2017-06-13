@@ -107,6 +107,21 @@ class GameSession(db.Model):
                                                                 self.end)
 
 
+class MPSession(db.Model):
+    __tablename__ = 'mp_sessions'
+    id = db.Column(db.Integer, primary_key=True)
+    gid = db.Column(db.Integer, db.ForeignKey('game_types.id'))
+    sids = db.Column(db.Text)
+    users = db.Column(db.Text)
+
+    def __repr__(self):
+        return 'Multiplayer Session %r for game %r, involving sids: %r and users: %r' % (
+            self.id,
+            self.type,
+            self.start,
+            self.end)
+
+
 class GameType(db.Model):
     __tablename__ = 'game_types'
     id = db.Column(db.Integer, primary_key=True)
@@ -120,7 +135,19 @@ class GameType(db.Model):
     def inject_game_types():
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
-        types = {'Small TTT Solo': (
+        types = {
+            'Small TTT Solo MP': (
+                {'html_file': 'admin/games/ttt-page.html',
+                 'shoe_file': 'game422-small.txt',
+                 'replay': False,
+                 'enable_multiplayer': True,
+                 'enable_bot': False,
+                 'min_users': 2,
+                 'max_users': 2,
+                 'opponent_covered': True,
+                 'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                             'CK': False, 'T': False}}),
+            'Small TTT Solo': (
             {'html_file': 'admin/games/ttt-page.html',
              'shoe_file': 'game422-small.txt',
              'replay': False,
