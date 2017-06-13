@@ -117,9 +117,9 @@ class MPSession(db.Model):
     def __repr__(self):
         return 'Multiplayer Session %r for game %r, involving sids: %r and users: %r' % (
             self.id,
-            self.type,
-            self.start,
-            self.end)
+            self.gid,
+            self.sids,
+            self.users)
 
 
 class GameType(db.Model):
