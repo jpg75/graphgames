@@ -15,7 +15,12 @@ from random import uniform
 
 user_d = dict()  # maps user names to game configuration session objects
 clients = dict()  # maps user names to ws connection
+mp_table = dict()  # maps game id to a list of tuples. Each tuple holds: uid, sid,
+# task-ref
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
+
+#####################################
+# utility structure
 history_record = {'move': '',
                   # card in the hand of the current player: in 'NK' position if it is
                   # numberkeeper's turn
@@ -24,8 +29,11 @@ history_record = {'move': '',
                   'target': ''}
 
 
+#####################################
+
+
 @celery.task(bind=True, base=AbortableTask)
-def timeout_task(self):
+def timeout_task(self, url, sid, struct):
     pass
 
 
@@ -220,7 +228,14 @@ def multiplayer_ready(message):
         serve_new_hand()
 
     else:  # manage the wait or start teh game between the parties
-        pass
+        mpgdef = mp_table.get(session['game_type'], None)
+        if mpgdef:  # already exist, append
+            mpgdef[1].append((current_user, session['game_session']))
+        else:  # make a new entry:
+            wait_task = timeout_task(url='redis://localhost:6379/0', sid=session['game_session'],
+                                     struct=session['game_cfg'])
+            mp_table[session['game_type']] = (wait_task, [(current_user, session['game_session'])])
+            wait_task.delay()   # start waiting task
 
 
 @socket_io.on('login')
@@ -252,8 +267,12 @@ def login(message):
         print "Client have to replay a session"
         emit('set_replay', {})
 
-    elif session['game_cfg']['enable_multiplayer']:
-        print "Client have to play a multi-user game (possibly AI)"
+    elif session['game_cfg']['enable_multiplayer'] and session['game_cfg']['enable_bot']:
+        print "Client have to play a multi-user game (AI)"
+        emit('set_multiplayer', {})
+
+    elif session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
+        print "Client have to play a multi-user game"
         emit('set_multiplayer', {})
 
     else:
@@ -310,7 +329,7 @@ def move(message):
 @socket_io.on('connect')
 @authenticated_only
 def test_connect():
-    print "A client connected: %s" % (request.namespace)
+    print "A client connected: %s" % request.namespace
     clients[current_user.email] = request.namespace
     print clients
 
