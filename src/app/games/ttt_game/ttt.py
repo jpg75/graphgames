@@ -44,7 +44,7 @@ class NotifierTask(Task):
 
 
 @celery.task(bind=True)
-def timeout_task(self, url, gid, sid, struct):
+def timeout_task(self, gid, sid, struct):
     """
         Generate a local web socket linked to the queue url. The task process is tied to this
         communication link for its lifespan.
@@ -53,24 +53,21 @@ def timeout_task(self, url, gid, sid, struct):
         The code is verbose using print statements. They are visible through the celery worker
         console in debug mode.
 
-        :param url: A (Redis) queue url
         :param gid: game id of the (multi-player) game associated
         :param sid: session ID
         :param struct: dictionary with game instance parameters
         :return:
         """
     print "inside timeout task"
+    sleep(10)
+    print "exit from sleep"
     conn = Redis()
-    # mpt = conn.hgetall("mp_table")
     mpt = loads(conn.get('mp_table'))
     result = {'gid': gid,
               'groups': [],
               'failed': []
               }
     print "mpt: ", mpt
-    # local_socket = SocketIO(message_queue=url)
-    sleep(5)
-    print "exit from sleep"
 
     # making groups:
     for game_id in mpt:
@@ -82,17 +79,22 @@ def timeout_task(self, url, gid, sid, struct):
             print "groups: ", groups
             for group in groups:
                 print "group: ", group
-                sids = ' '.join(str(x[1] for x in group))
-                users = ' '.join(str(x[0] for x in group))
+                sids = ' '.join(str(x[1]) for x in group)
+                users = ' '.join(str(x[0]) for x in group)
 
                 if len(group) <= struct['max_users'] and len(group) >= struct['min_users']:
+                    print "appending group"
                     result['groups'].append(group)
 
                     mps = MPSession(gid=game_id, sids=sids, users=users)
                     db.session.add(mps)
-                else:
-                    result['failed'].append(group)
 
+                else:
+                    print "appending to failed!"
+                    for item in group:
+                        result['failed'].append(item)
+
+            print result
             db.session.commit()
         else:
             print "NOT EQUAL!"
@@ -296,18 +298,14 @@ def multiplayer_ready(message):
         print "mpgdef: ", mpgdef
         if mpgdef:  # already exist, append
             mpgdef.append((current_user.id, session['game_session']))
-            conn.hmset('mp_table', mp_table)
+            conn.set('mp_table', dumps(mp_table))
 
         else:  # make a new entry:
             mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
-            # conn.hmset('mp_table', mp_table)
             conn.set('mp_table', dumps(mp_table))
-            # wait_task = \
-            timeout_task.delay(url='redis://localhost:6379/0', gid=session['game_type'],
+            timeout_task.delay(gid=session['game_type'],
                                sid=session['game_session'],
                                struct=session['game_cfg'])
-
-            # wait_task.delay()  # start waiting task
 
 
 @socket_io.on('login')
