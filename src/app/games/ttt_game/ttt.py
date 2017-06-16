@@ -10,10 +10,9 @@ from time import sleep
 from ... import celery
 from celery.contrib.abortable import AbortableTask, Task
 from parser import RuleParser
-from collections import deque
+# from collections import deque
 from random import uniform
 from redis import Redis
-import requests
 
 user_d = dict()  # maps user names to game configuration session objects
 clients = dict()  # maps user names to ws connection
@@ -50,10 +49,6 @@ class NotifierTask(Task):
         from socketIO_client import SocketIO as sio
         with sio('localhost', srv['port']) as s:
             s.emit('notify_groups', retval)
-
-            # url = 'http://localhost:5000/admin/notify_mp'
-            # r = requests.post(url, json=retval)
-            # print r
 
 
 @celery.task(bind=True, base=NotifierTask)
@@ -304,7 +299,7 @@ def multiplayer_ready(message):
     :param message: the message is considered having an empty payload
     """
     if session['game_cfg']['enable_bot']:
-        serve_new_hand()
+        serve_new_hand(current_user, session['game_session'])
 
     else:  # manage the wait or start the game between the parties
         conn = Redis()
@@ -319,6 +314,7 @@ def multiplayer_ready(message):
             conn.set('mp_table', dumps(mp_table))
             conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
                 'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
+
             timeout_task.delay(gid=session['game_type'],
                                sid=session['game_session'],
                                struct=session['game_cfg'])
@@ -351,18 +347,18 @@ def login(message):
 
     if session['game_cfg']['replay']:
         print "Client have to replay a session"
-        emit('set_replay', {})
+        emit('set_replay', {}, room=clients[current_user.email])
 
     elif session['game_cfg']['enable_multiplayer'] and session['game_cfg']['enable_bot']:
         print "Client have to play a multi-user game (AI)"
-        emit('set_multiplayer', {})
+        emit('set_multiplayer', {}, room=clients[current_user.email])
 
     elif session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
         print "Client have to play a multi-user game"
-        emit('set_multiplayer', {})
+        emit('set_multiplayer', {}, room=clients[current_user.email])
 
     else:
-        serve_new_hand()
+        serve_new_hand(current_user, session['game_session'])
 
 
 @socket_io.on('move')
@@ -387,7 +383,7 @@ def move(message):
 
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
         # Serve a new hand and the dummy move 'HAND' which represents the start of a hand:
-        next_hand = serve_new_hand()
+        next_hand = serve_new_hand(current_user, session['game_session'])
         # when bots are enabled and next is NK, then the bot task is triggered:
         if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
             bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
@@ -403,7 +399,7 @@ def move(message):
             player = 'NK'
         else:
             player = 'CK'
-        emit('toggle_players', {'player': player})
+        emit('toggle_players', {'player': player}, room=clients[current_user.email])
 
         # if bot enabled, trigger the celery bot:
         if session['game_cfg']['enable_bot']:
@@ -423,27 +419,25 @@ def notify_groups_handler(message):
             u = User.query.filter_by(id=participant[0])
             rns = clients.get(u.email, None)
             if rns:
-                clients[u.email].emit('set_player', {'player': gen.next()})
-
+                emit('set_player', {'player': gen.next()}, room=clients[u.email])
+                serve_new_hand(u, participant[1])
 
     for failed in ms['failed']:
         u = User.query.filter_by(id=failed[0])
         rns = clients.get(u.email, None)
         if rns:
-            clients[u.email].emit('abort_multiplayer', {})
+            emit('abort_multiplayer', {}, room=clients[u.email])
 
 
 @socket_io.on('connect')
-# @authenticated_only
 def connect():
-    print "A client connected: %s" % request.namespace
+    print "A client connected: %s" % request.sid
     if current_user.is_authenticated:
-        clients[current_user.email] = request.namespace
+        clients[current_user.email] = request.sid
     print clients
 
 
 @socket_io.on('disconnect')
-# @authenticated_only
 def disconnect():
     if 'replay_bot' in session:  # terminate a replay bot if any
         session['replay_bot'].abort()
@@ -452,18 +446,20 @@ def disconnect():
         clients.pop(current_user.email, None)
         user_d.pop(current_user.email, None)  # remove user from connected users
 
-    print('Client disconnected ', request.namespace)
+    print 'Client disconnected ', request.sid
 
 
-def serve_new_hand():
+def serve_new_hand(user, sid):
     """
     Generate the new hand according to the config and send a message to the client about it.
 
+    :param user_email: user db object
+    :param sid: session id
     :return: a python dictionary describing the new hand. It is the same structure which is
     written in the Move DB using JSON encoding.
     """
     next_hand_record = None
-    session_config = user_d[current_user.email]
+    session_config = user_d[user.email]
     if len(session_config.content) > 0:
         hand = session_config.content.pop(0)
         hand = hand.upper()
@@ -472,7 +468,7 @@ def serve_new_hand():
 
         next_hand_record = {'move': 'HAND', 'panel': hand}
 
-        m2 = Move(uid=current_user.id, sid=session['game_session'], mv=dumps(next_hand_record),
+        m2 = Move(uid=user.id, sid=sid, mv=dumps(next_hand_record),
                   play_role='', ts=datetime.now())
         db.session.add(m2)
         db.session.commit()
@@ -480,15 +476,16 @@ def serve_new_hand():
         print "Serving new HAND: %s" % hand
         emit('hand', {'success': 'ok', 'hand': hand,
                       'covered': session['game_cfg']['covered'],
-                      'opponent_covered': session['game_cfg']['opponent_covered']})
+                      'opponent_covered': session['game_cfg'][
+                          'opponent_covered']}, room=clients[user.email])
 
     else:
         print "session ended"
         # ends the session on the DB:
-        gs = GameSession.query.filter_by(id=session['game_session']).first()
+        gs = GameSession.query.filter_by(id=sid).first()
         gs.end = datetime.now()
         db.session.add(gs)
         db.session.commit()
-        emit('gameover', {})
+        emit('gameover', {}, room=clients[user.email])
 
     return next_hand_record

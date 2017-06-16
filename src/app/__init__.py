@@ -160,8 +160,6 @@ def create_app(cfg):
     config[cfg].init_app(app)
     db.init_app(app)
 
-    # socket_io.init_app(app, message_queue='redis://localhost:6379/0')
-
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
