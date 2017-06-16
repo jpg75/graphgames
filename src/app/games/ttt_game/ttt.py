@@ -1,4 +1,4 @@
-from ... import socket_io, db, Configuration
+from ... import socket_io, db, Configuration, app
 from ...decorators import authenticated_only
 from flask_security import current_user
 from flask_socketio import SocketIO, emit
@@ -33,17 +33,30 @@ history_record = {'move': '',
 
 #####################################
 
+def ttt_player_gen():
+    yield 'CK'
+    yield 'NK'
+
+
 class NotifierTask(Task):
     """Task that sends notification on completion."""
     abstract = True
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        url = 'http://localhost:5000/admin/notify_mp'
-        data = {'result': retval}
-        requests.post(url, data=data)
+        print "After return handler!"
+        print retval
+        conn = Redis()
+        srv = loads(conn.get('srv_credentials'))
+        from socketIO_client import SocketIO as sio
+        with sio('localhost', srv['port']) as s:
+            s.emit('notify_groups', retval)
+
+            # url = 'http://localhost:5000/admin/notify_mp'
+            # r = requests.post(url, json=retval)
+            # print r
 
 
-@celery.task(bind=True)
+@celery.task(bind=True, base=NotifierTask)
 def timeout_task(self, gid, sid, struct):
     """
         Generate a local web socket linked to the queue url. The task process is tied to this
@@ -59,7 +72,7 @@ def timeout_task(self, gid, sid, struct):
         :return:
         """
     print "inside timeout task"
-    sleep(10)
+    sleep(5)
     print "exit from sleep"
     conn = Redis()
     mpt = loads(conn.get('mp_table'))
@@ -88,6 +101,7 @@ def timeout_task(self, gid, sid, struct):
 
                     mps = MPSession(gid=game_id, sids=sids, users=users)
                     db.session.add(mps)
+                    db.session.commit()
 
                 else:
                     print "appending to failed!"
@@ -95,7 +109,7 @@ def timeout_task(self, gid, sid, struct):
                         result['failed'].append(item)
 
             print result
-            db.session.commit()
+
         else:
             print "NOT EQUAL!"
 
@@ -303,6 +317,8 @@ def multiplayer_ready(message):
         else:  # make a new entry:
             mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
             conn.set('mp_table', dumps(mp_table))
+            conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
+                'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
             timeout_task.delay(gid=session['game_type'],
                                sid=session['game_session'],
                                struct=session['game_cfg'])
@@ -396,22 +412,46 @@ def move(message):
                            up=message['panel']['U'], target=message['panel']['T'])
 
 
+@socket_io.on('notify_groups')
+def notify_groups_handler(message):
+    print message
+    ms = loads(message)
+    for group in ms['groups']:
+
+        gen = ttt_player_gen()  # WARNING: in tt no more than 2 participant
+        for participant in group:
+            u = User.query.filter_by(id=participant[0])
+            rns = clients.get(u.email, None)
+            if rns:
+                clients[u.email].emit('set_player', {'player': gen.next()})
+
+
+    for failed in ms['failed']:
+        u = User.query.filter_by(id=failed[0])
+        rns = clients.get(u.email, None)
+        if rns:
+            clients[u.email].emit('abort_multiplayer', {})
+
+
 @socket_io.on('connect')
-@authenticated_only
-def test_connect():
+# @authenticated_only
+def connect():
     print "A client connected: %s" % request.namespace
-    clients[current_user.email] = request.namespace
+    if current_user.is_authenticated:
+        clients[current_user.email] = request.namespace
     print clients
 
 
 @socket_io.on('disconnect')
-@authenticated_only
-def test_disconnect():
-    user_d.pop(current_user.email, None)  # remove user from connected users
+# @authenticated_only
+def disconnect():
     if 'replay_bot' in session:  # terminate a replay bot if any
         session['replay_bot'].abort()
 
-    clients.pop(current_user.email, None)
+    if current_user.is_authenticated:
+        clients.pop(current_user.email, None)
+        user_d.pop(current_user.email, None)  # remove user from connected users
+
     print('Client disconnected ', request.namespace)
 
 
