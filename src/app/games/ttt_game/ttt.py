@@ -12,7 +12,7 @@ from tasks import timeout_task, bot_task, replay_task
 user_d = dict()  # maps user names to game configuration session objects
 clients = dict()  # maps user names to ws connection
 # maps game id to a tuple: game_id -> (task-ref, [(uid, sid), ...] )
-mp_table = dict()
+# mp_table = dict()
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 #####################################
@@ -28,6 +28,10 @@ history_record = {'move': '',
 #####################################
 
 def ttt_player_gen():
+    """
+    Super simple generator. It just works for TTT players.
+    :return:
+    """
     yield 'CK'
     yield 'NK'
 
@@ -58,21 +62,44 @@ def multiplayer_ready(message):
 
     else:  # manage the wait or start the game between the parties
         conn = Redis()
-        mpgdef = mp_table.get(session['game_type'], None)
-        print "mpgdef: ", mpgdef
-        if mpgdef:  # already exist, append
-            mpgdef.append((current_user.id, session['game_session']))
-            conn.set('mp_table', dumps(mp_table))
 
-        else:  # make a new entry:
-            mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
-            conn.set('mp_table', dumps(mp_table))
-            conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
-                'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
+        # get mptable if any
+        table = conn.get('mp_table')
+        if table:
+            table_obj = loads(table)
+            mpdef = table_obj.get(session['game_type'], None)
+            # an entry for this mplayer session already exist, append the new player but checks
+            # it is not already in:
+            if mpdef and (current_user.id, session['game_session']) not in mpdef:
+                mpdef.append((current_user.id, session['game_session']))
+                conn.set('mp_table', dumps(table_obj))
 
-            timeout_task.delay(gid=session['game_type'],
-                               sid=session['game_session'],
-                               struct=session['game_cfg'])
+            else:  # make a new entry:
+                table_obj[[session['game_type']]] = [(current_user.id, session['game_session'])]
+                conn.set('mp_table', dumps(table_obj))
+                conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
+                    'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
+                # conn.expire('srv_credentials', 30)  # expires after the group making time window
+
+                timeout_task.delay(gid=session['game_type'],
+                                   sid=session['game_session'],
+                                   struct=session['game_cfg'])
+
+                # mpgdef = mp_table.get(session['game_type'], None)
+                # print "mpgdef: ", mpgdef
+                # if mpgdef:  # already exist, append
+                #     mpgdef.append((current_user.id, session['game_session']))
+                #     conn.set('mp_table', dumps(mp_table))
+                #
+                # else:  # make a new entry:
+                #     mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
+                #     conn.set('mp_table', dumps(mp_table))
+                #     conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
+                #         'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
+                #
+                #     timeout_task.delay(gid=session['game_type'],
+                #                        sid=session['game_session'],
+                #                        struct=session['game_cfg'])
 
 
 @socket_io.on('login')
@@ -122,6 +149,8 @@ def move(message):
     """
     When receiving a move from the client.
     If in bot_enabled game session, it has to trigger the opponent by activating the celery bot.
+    If in multi player, it has to forward the current move to the opponent in order to keep the
+    clients state consistent.
 
     :param message:
     :return:
@@ -138,7 +167,11 @@ def move(message):
 
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
         # Serve a new hand and the dummy move 'HAND' which represents the start of a hand:
-        next_hand = serve_new_hand(current_user, session['game_session'])
+        if session['game_cfg']['enable_multiplayer']:
+            next_hand = serve_new_hand(current_user, session['game_session'], multi_player=True)
+        else:
+            next_hand = serve_new_hand(current_user, session['game_session'], multi_player=False)
+
         # when bots are enabled and next is NK, then the bot task is triggered:
         if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
             bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
@@ -175,7 +208,7 @@ def notify_groups_handler(message):
             rns = clients.get(u.email, None)
             if rns:
                 emit('set_player', {'player': gen.next()}, room=clients[u.email])
-                serve_new_hand(u, participant[1])
+                serve_new_hand(u, participant[1], multi_player=True)
 
     for failed in ms['failed']:
         u = User.query.filter_by(id=failed[0])
@@ -204,12 +237,14 @@ def disconnect():
     print 'Client disconnected ', request.sid
 
 
-def serve_new_hand(user, sid):
+def serve_new_hand(user, sid, multi_player=False):
     """
     Generate the new hand according to the config and send a message to the client about it.
 
     :param user_email: user db object
     :param sid: session id
+    :param multi_player: flag signaling multi player game or not. When multi player, the mp_table
+    structure on Redis DB, must be updated
     :return: a python dictionary describing the new hand. It is the same structure which is
     written in the Move DB using JSON encoding.
     """
@@ -242,5 +277,15 @@ def serve_new_hand(user, sid):
         db.session.add(gs)
         db.session.commit()
         emit('gameover', {}, room=clients[user.email])
+        if multi_player:
+            conn = Redis()
+            table = conn.get('mp_table')
+            if table:
+                table_obj = loads(table)
+                table_obj.pop(session['game_type'], None)
+                if any(table_obj):
+                    conn.set('mp_table', dumps(table_obj))
+                else:
+                    conn.delete('mp_table')
 
     return next_hand_record

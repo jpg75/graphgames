@@ -20,8 +20,8 @@ class NotifierTask(Task):
         print retval
         conn = Redis()
         srv = loads(conn.get('srv_credentials'))
-        from socketIO_client import SocketIO as sio
-        with sio('localhost', srv['port']) as s:
+        from socketIO_client import SocketIO as skio
+        with skio('localhost', srv['port']) as s:
             s.emit('notify_groups', retval)
 
 
