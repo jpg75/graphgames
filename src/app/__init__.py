@@ -108,7 +108,7 @@ def csv2string(data):
     return si.getvalue().strip('\r\n')
 
 
-db = SQLAlchemy()
+# db = SQLAlchemy()
 
 
 def make_zip(file_list):
@@ -158,7 +158,7 @@ def create_app(cfg):
     app.config.from_object(config[cfg])
 
     config[cfg].init_app(app)
-    db.init_app(app)
+    # db.init_app(app)
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
@@ -175,6 +175,7 @@ celery = make_celery()
 env = environ.get('DEFAULT_WEB_APP_CONFIG') or 'default'
 print "Starting app with %s configuration object" % env
 app = create_app(cfg=env)
+db = SQLAlchemy(app)
 # starts a socketio server with redis queue
 socket_io = SocketIO(app, message_queue='redis://localhost:6379/0')
 celery.config_from_object(config['celery'])
