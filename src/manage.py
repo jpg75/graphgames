@@ -30,7 +30,7 @@ admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
 
 mypath = path.join(path.dirname(__file__), 'data')
 # path += path.join(path.dirname(__file__), 'app/static')
-print mypath
+# print mypath
 admin.add_view(GGFileAdmin(mypath, 'data/', name='Data files'))
 
 

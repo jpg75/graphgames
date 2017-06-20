@@ -85,7 +85,7 @@ def timeout_task(self, gid, sid, struct):
     return result
 
 
-@celery.task(bind=True, base=AbortableTask)
+@celery.task(bind=True)
 def replay_task(self, url, sid, struct):
     """
     Generate a local web socket linked to the queue url. The task process is tied to this
@@ -110,8 +110,8 @@ def replay_task(self, url, sid, struct):
     i = 0
     # send all moves one by one
     for move in moves[1:]:
-        if self.is_aborted:
-            return
+        # if self.is_aborted:
+        #     return
 
         c = move.ts - moves[i].ts
         m = moves[i].mv
@@ -137,8 +137,8 @@ def replay_task(self, url, sid, struct):
         print "Waiting: %f seconds" % fsec
         sleep(fsec)
 
-        if self.is_aborted:
-            return
+        # if self.is_aborted:
+        #     return
 
         i += 1
         # send the last move:
