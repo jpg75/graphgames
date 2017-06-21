@@ -195,8 +195,7 @@ def move(message):
         else:
             player = 'CK'
 
-        # emit('set_multiplayer', {}, room=clients[current_user.email])
-        emit('set_multiplayer', {}, room=redis.hget('clients', current_user.email))
+        emit('toggle_players', {'player': player}, room=redis.hget('clients', current_user.email))
 
         # when just multiplayer but no bot, forward the move to the other parties:
         if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
