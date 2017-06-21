@@ -1,7 +1,7 @@
 from ... import db
 from time import sleep
 from ... import celery
-from celery.contrib.abortable import AbortableTask, Task
+from celery.contrib.abortable import Task
 from ...models import Move, User, MPSession
 from flask_socketio import SocketIO
 from parser import RuleParser
@@ -110,9 +110,6 @@ def replay_task(self, url, sid, struct):
     i = 0
     # send all moves one by one
     for move in moves[1:]:
-        # if self.is_aborted:
-        #     return
-
         c = move.ts - moves[i].ts
         m = moves[i].mv
         fsec = c.total_seconds()
@@ -137,9 +134,6 @@ def replay_task(self, url, sid, struct):
         print "Waiting: %f seconds" % fsec
         sleep(fsec)
 
-        # if self.is_aborted:
-        #     return
-
         i += 1
         # send the last move:
         if i == len(moves) - 1:
@@ -153,7 +147,6 @@ def replay_task(self, url, sid, struct):
 
     sleep(5.0)  # by default wait half second before quitting the game
     local_socket.emit('gameover', {'comment': 'Replay ended'})  # end the game
-    # session.pop('replay_bot', None)
 
     print "Game over."
 

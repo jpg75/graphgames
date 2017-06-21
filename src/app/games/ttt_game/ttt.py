@@ -44,9 +44,10 @@ def replay_ready(message):
 
     """
     # here start the background thread for replay session:
+    print "session: ", session['game_session']
     replay_bot = replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
                                    struct=session['game_cfg'])
-    session['replay_bot'] = replay_bot
+    # session['replay_bot'] = replay_bot
 
 
 @socket_io.on('multiplayer_ready')
@@ -181,28 +182,53 @@ def move(message):
             print "hand ", next_hand['panel'][next_hand['panel']['PL']]
             print "up: ", next_hand['panel']['U']
             print "target ", next_hand['panel']['T']
+
     else:
         player = message['player']
         if player == 'CK':
             player = 'NK'
         else:
             player = 'CK'
+
         emit('toggle_players', {'player': player}, room=clients[current_user.email])
+
+        # when just multiplayer but no bot, forward the move to the other parties:
+        if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
+            conn = Redis()
+            groups = conn.get('groups_game_' + session['game_type'])
+            for group in groups:
+                group_obj = loads(group)
+                participants = []
+                for item in group_obj:
+                    participants.append(item[0])
+
+                if current_user.id in participants:
+                    for item in participants:
+                        if item != current_user.id:
+                            u = User.query.filter_by(id=item)
+                            emit('external_move', {'move': message['move'], 'player': 'NK', },
+                                 room=clients[u.email])
 
         # if bot enabled, trigger the celery bot:
         if session['game_cfg']['enable_bot']:
-            bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+            bot_task.delay(url='redis://localhost:6379/0',
+                           sid=session['game_session'],
                            hand=message['panel'][player],
-                           up=message['panel']['U'], target=message['panel']['T'])
+                           up=message['panel']['U'],
+                           target=message['panel']['T'])
 
 
 @socket_io.on('notify_groups')
 def notify_groups_handler(message):
     print message
     ms = loads(message)
-    for group in ms['groups']:
+    conn = Redis()
 
-        gen = ttt_player_gen()  # WARNING: in tt no more than 2 participant
+    for group in ms['groups']:
+        # put each group into the redis set related to the game group:
+        conn.sadd('groups_game_' + message['pid'], dumps(group))
+
+        gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
         for participant in group:
             u = User.query.filter_by(id=participant[0])
             rns = clients.get(u.email, None)
@@ -227,8 +253,8 @@ def connect():
 
 @socket_io.on('disconnect')
 def disconnect():
-    if 'replay_bot' in session:  # terminate a replay bot if any
-        session['replay_bot'].abort()
+    # if 'replay_bot' in session:  # terminate a replay bot if any
+    #     session['replay_bot'].abort()
 
     if current_user.is_authenticated:
         clients.pop(current_user.email, None)
