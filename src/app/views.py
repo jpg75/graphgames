@@ -17,6 +17,8 @@ class GGFileAdmin(FileAdmin):
     A FileAdmin customized in order to allow the access by users having 'admin' role.
     """
     form_base_class = SecureForm
+    can_download = True
+    editable_extensions = ('txt', 'json', 'js')
 
     def is_accessible(self):
         if not current_user.is_active or not current_user.is_authenticated:

@@ -70,7 +70,7 @@ vis.text("The Graph").select("#graph");
 
 let sim = d3.forceSimulation();  // setup a force simulation object
 
-//d3.json("/static/games/ttt/TTTg.json", function(error, data) {
+//d3.json("/static/games/ttt/data/TTTg.json", function(error, data) {
 //    if (error) throw error;
 //
 //    console.log("Data found: ",data);

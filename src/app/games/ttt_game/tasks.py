@@ -176,7 +176,7 @@ def bot_task(url, sid, hand, up, target, player_role='NK', fake_delay=3.0, memor
     moves and 2 human player moves)
     """
     print "TTT bot started!"
-    rulep = RuleParser()
+    rulep = RuleParser(file_name='app/static/games/ttt/data')
     rulep.load_rules()
     local_socket = SocketIO(message_queue=url)
     # get the last game state from DB:

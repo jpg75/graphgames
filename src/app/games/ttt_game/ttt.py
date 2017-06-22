@@ -127,7 +127,8 @@ def login(message):
     print "session ", session['game_cfg']
     print "session: ", session['game_type']
 
-    user_d[current_user.email] = Configuration(config_file=session['game_cfg']['shoe_file'])
+    user_d[current_user.email] = Configuration(config_file=session['game_cfg']['shoe_file'],
+                                               rel_path='app/static/games/ttt/data')
     user_d[current_user.email].purgelines()
 
     if session['game_cfg']['replay']:

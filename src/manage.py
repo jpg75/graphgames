@@ -28,10 +28,11 @@ admin.add_view(UserAdminView(User, db.session, name='Users'))
 admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
 
-mypath = path.join(path.dirname(__file__), 'data')
-# path += path.join(path.dirname(__file__), 'app/static')
-# print mypath
-admin.add_view(GGFileAdmin(mypath, 'data/', name='Data files'))
+mypath = path.join(path.dirname(__file__), 'app/static')
+print "path: ", mypath
+print "app root path: ", app.root_path
+admin.add_view(GGFileAdmin(base_path=mypath, base_url='/static/static', name='Data files',
+                           verify_path=True))
 
 
 # define a context processor for merging flask-admin's template context into the
@@ -62,6 +63,7 @@ def run():
                       certfile='ca.crt', keyfile='ca.key')
     else:
         socket_io.run(app, host='0.0.0.0', port=app.config['SOCKET_IO_PORT'])
+
 
 @manager.command
 def populate():
