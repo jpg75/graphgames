@@ -56,7 +56,10 @@ def replay_ready(message):
 @authenticated_only
 def multiplayer_ready(message):
     """
-    Called when 'multiplayer_ready' message is received. The background task is spawned.
+    Called when 'multiplayer_ready' message is received.
+    When playing with other human players, the 'mp_table' is populated with info about the
+    current player willing to participate.
+    The background task is spawned.
 
     :param message: the message is considered having an empty payload
     """
@@ -84,25 +87,14 @@ def multiplayer_ready(message):
                     'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
                 # conn.expire('srv_credentials', 30)  # expires after the group making time window
 
-                timeout_task.delay(gid=session['game_type'],
-                                   sid=session['game_session'],
+                timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
                                    struct=session['game_cfg'])
-
-                # mpgdef = mp_table.get(session['game_type'], None)
-                # print "mpgdef: ", mpgdef
-                # if mpgdef:  # already exist, append
-                #     mpgdef.append((current_user.id, session['game_session']))
-                #     conn.set('mp_table', dumps(mp_table))
-                #
-                # else:  # make a new entry:
-                #     mp_table[session['game_type']] = [(current_user.id, session['game_session'])]
-                #     conn.set('mp_table', dumps(mp_table))
-                #     conn.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
-                #         'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
-                #
-                #     timeout_task.delay(gid=session['game_type'],
-                #                        sid=session['game_session'],
-                #                        struct=session['game_cfg'])
+        else:  # table not yet available on redis
+            # makes the table and set current player as a candidate for current game:
+            redis.set('mp_table',
+                      dumps({session['game_type']: [(current_user.id, session['game_session'])]}))
+            timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
+                               struct=session['game_cfg'])
 
 
 @socket_io.on('login')
@@ -273,6 +265,22 @@ def disconnect():
     if current_user.is_authenticated:
         # clients.pop(current_user.email, None)
         redis.hdel('clients', current_user.email)
+        # remove any client reference in mp_table:
+        table_json = redis.hget('mp_table')
+        if table_json:
+            table = loads(table_json)
+            gcandidates = table[session['game_type']]
+            gcandidates = [item for item in gcandidates if item[0] != current_user.id]
+            if len(gcandidates) != 0:
+                table[session['game_type']] = gcandidates
+            else:
+                table.pop(session['game_type'], None)
+
+            if table:
+                redis.set('mp_table', dumps(table))
+            else:  # remove if became empty:
+                redis.delete('mp_table')
+
         user_d.pop(current_user.email, None)  # remove user from connected users
 
     print 'Client disconnected ', request.sid
