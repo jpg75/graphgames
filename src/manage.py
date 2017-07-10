@@ -3,8 +3,9 @@
 from os import path
 from flask import url_for
 from app import db, socket_io, app, admin
-from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, GGFileAdmin
-from app.models import User, Role, Move, GameSession, GameType, user_datastore, init_db
+from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, MPSessionAdminView, \
+    GGFileAdmin
+from app.models import User, Role, Move, GameSession, GameType, MPSession, user_datastore, init_db
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
 from flask_security import Security, user_registered
@@ -26,6 +27,7 @@ def user_registered_sighandler(app, user, confirm_token):
 
 admin.add_view(UserAdminView(User, db.session, name='Users'))
 admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
+admin.add_view(MPSessionAdminView(MPSession, db.session, name='MPSessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
 
 mypath = path.join(path.dirname(__file__), 'app/static')

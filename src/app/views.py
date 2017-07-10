@@ -249,3 +249,10 @@ class SessionAdminView(GGBasicAdminView):
             if not self.handle_view_exception(ex):
                 raise
             flash('Failed to download session data')
+
+
+class MPSessionAdminView(GGBasicAdminView):
+    can_edit = False
+    can_create = False
+    can_view_details = False
+    column_list = ['id', 'gid', 'sids', 'users']
