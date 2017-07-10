@@ -13,6 +13,7 @@ from time import time, localtime
 from os.path import join, dirname, abspath, sep
 from json import loads
 from gevent import monkey
+from redis import Redis
 
 SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
@@ -159,6 +160,10 @@ def create_app(cfg):
 
     config[cfg].init_app(app)
     # db.init_app(app)
+    # Resets the structures on Redis:
+    conn = Redis()
+    conn.delete('mp_table')
+    conn.hdel('clients', conn.hgetall('clients'))
 
     from main import main as main_blueprint
     app.register_blueprint(main_blueprint)
