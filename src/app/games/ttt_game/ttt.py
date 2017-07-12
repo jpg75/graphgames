@@ -12,7 +12,6 @@ from tasks import timeout_task, bot_task, replay_task
 user_d = dict()  # maps user names to game configuration session objects
 # clients = dict()  # maps user names to ws connection
 # maps game id to a tuple: game_id -> (task-ref, [(uid, sid), ...] )
-# mp_table = dict()
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 #####################################
@@ -71,24 +70,30 @@ def multiplayer_ready(message):
 
         # get mptable if any
         table = redis.get('mp_table')
+        print "table: ", table
         if table:
             table_obj = loads(table)
             mpdef = table_obj.get(session['game_type'], None)
             # an entry for this mplayer session already exist, append the new player but checks
             # it is not already in:
             if mpdef and (current_user.id, session['game_session']) not in mpdef:
+                print "Appending new entry to table"
                 mpdef.append((current_user.id, session['game_session']))
                 redis.set('mp_table', dumps(table_obj))
 
             else:  # make a new entry:
+                print "make a new entry for mp session"
                 table_obj[[session['game_type']]] = [(current_user.id, session['game_session'])]
+                print "new table obj: ", table_obj
                 redis.set('mp_table', dumps(table_obj))
+                print "set mp_table into redis: ", dumps(table_obj)
                 redis.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
                     'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
-                # conn.expire('srv_credentials', 30)  # expires after the group making time window
+                print "set srv_credentials var in redis: ", redis.get('srv_credentials')
 
                 timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
                                    struct=session['game_cfg'])
+
         else:  # table not yet available on redis
             # makes the table and set current player as a candidate for current game:
             redis.set('mp_table',
@@ -266,19 +271,21 @@ def disconnect():
         # clients.pop(current_user.email, None)
         redis.hdel('clients', current_user.email)
         # remove any client reference in mp_table:
-        table_json = redis.hget('mp_table')
+        table_json = redis.get('mp_table')
         if table_json:
-            table = loads(table_json)
-            gcandidates = table[session['game_type']]
+            table_obj = loads(table_json)
+            print "table ", table_obj
+            gcandidates = table_obj[session['game_type']]
+            print "candidates: ", gcandidates
             gcandidates = [item for item in gcandidates if item[0] != current_user.id]
             if len(gcandidates) != 0:
-                table[session['game_type']] = gcandidates
+                table_obj[session['game_type']] = gcandidates
             else:
-                table.pop(session['game_type'], None)
+                table_obj.pop(session['game_type'], None)
 
-            if table:
-                redis.set('mp_table', dumps(table))
-            else:  # remove if became empty:
+            if table_obj:  # if not empty
+                redis.set('mp_table', dumps(table_obj))
+            else:  # remove if empty:
                 redis.delete('mp_table')
 
         user_d.pop(current_user.email, None)  # remove user from connected users
@@ -318,6 +325,7 @@ def serve_new_hand(user, sid, multi_player=False):
         #               'opponent_covered': session['game_cfg'][
         #                   'opponent_covered']}, room=clients[user.email])
         emit('hand', {'success': 'ok', 'hand': hand,
+                      'card_flip': session['game_cfg']['card_flip'],
                       'covered': session['game_cfg']['covered'],
                       'opponent_covered': session['game_cfg'][
                           'opponent_covered']}, room=redis.hget('clients', user.email))

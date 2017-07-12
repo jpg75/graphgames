@@ -17,7 +17,8 @@ let card_layout = { 'changed': false,
 let player = 'CK', score = 0, goalCard = '2H';
 let username = '';
 let covered = null;  // whether or not covering cards
-let opponent_covered = false;
+let card_flip = true;  // whether or not allow flipping cards
+let opponent_covered = false;  // force the opponent card always covered
 let replay = false;  // support for replay of game sessions
 let multiplayer = false;    // support for multi player sessions
 
@@ -277,11 +278,22 @@ function makeDraggable() {
 
 	// Set card bindings to flip behavior:
 	$('.card').off('dblclick');
-	$('.card').dblclick(
-					function() {
-						console.log('flipping card: '+ $(this).data('card') )
-						$(this).find('img').toggle();
-					} );
+	$('.card').off('touch');
+	$('.card').on({
+	        dblclick: function() {
+	                    console.log('val: '+ card_flip);
+	                    if (card_flip) {
+						    console.log('flipping card: '+ $(this).data('card'));
+						    $(this).find('img').toggle();
+						}
+					},
+			touch:	function() {
+						if (card_flip) {
+						    console.log('flipping card: '+ $(this).data('card'));
+    						$(this).find('img').toggle();
+    					}
+					}
+			});
 }
 
 /*******************************************************************
@@ -445,6 +457,7 @@ function handleHand(message) {
 	// collect global data from message:
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
+    card_flip = message['card_flip'];
 
 	console.log('handlehand opponent_covered: ' + opponent_covered);
 	console.log(cards);

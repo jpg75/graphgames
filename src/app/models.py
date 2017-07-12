@@ -136,28 +136,18 @@ class GameType(db.Model):
         # maps description -> tuple
         # the tuple has just a description of the configuration as a python object (dictionary)
         types = {
-            'Small TTT Solo MP': (
+            'Small TTT Solo': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
                  'replay': False,
-                 'enable_multiplayer': True,
+                 'enable_multiplayer': False,
                  'enable_bot': False,
                  'min_users': 2,
                  'max_users': 2,
+                 'card_flip': True,
                  'opponent_covered': True,
                  'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
                              'CK': False, 'T': False}}),
-            'Small TTT Solo': (
-            {'html_file': 'admin/games/ttt-page.html',
-             'shoe_file': 'game422-small.txt',
-             'replay': False,
-             'enable_multiplayer': False,
-             'enable_bot': False,
-             'min_users': 2,
-             'max_users': 2,
-             'opponent_covered': True,
-             'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
-                         'CK': False, 'T': False}}),
             'Small TTT Solo Uncovered': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
@@ -166,6 +156,7 @@ class GameType(db.Model):
                  'enable_bot': False,
                  'min_users': 2,
                  'max_users': 2,
+                 'card_flip': True,
                  'opponent_covered': False,
                  'covered': {'NK': False, 'N': True, 'U': False,
                              'C': True, 'CK': False, 'T': False}}),
@@ -177,10 +168,35 @@ class GameType(db.Model):
                  'enable_multiplayer': True,
                  'min_users': 2,
                  'max_users': 2,
+                 'card_flip': True,
                  'covered': {'CK': False, 'C': True, 'NK': False,
                              'N': True, 'U': False, 'T': False},
                  'opponent_covered': True}
-            )
+            ),
+            'Small TTT Solo MP': (
+                {'html_file': 'admin/games/ttt-page.html',
+                 'shoe_file': 'game422-small.txt',
+                 'replay': False,
+                 'enable_multiplayer': True,
+                 'enable_bot': False,
+                 'min_users': 2,
+                 'max_users': 2,
+                 'card_flip': True,
+                 'opponent_covered': True,
+                 'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                             'CK': False, 'T': False}}),
+            'Small TTT Solo cards unflippable': (
+                {'html_file': 'admin/games/ttt-page.html',
+                 'shoe_file': 'game422-small.txt',
+                 'replay': False,
+                 'enable_multiplayer': False,
+                 'enable_bot': False,
+                 'min_users': 2,
+                 'max_users': 2,
+                 'card_flip': False,
+                 'opponent_covered': True,
+                 'covered': {'NK': False, 'N': True, 'U': False, 'C': True,
+                             'CK': False, 'T': False}}),
         }
 
         for t in types:
