@@ -278,7 +278,7 @@ function makeDraggable() {
 
 	// Set card bindings to flip behavior:
 	$('.card').off('dblclick');
-	$('.card').off('touch');
+	$('.card').off('touchstart');
 	$('.card').on({
 	        dblclick: function() {
 	                    console.log('val: '+ card_flip);
@@ -287,7 +287,7 @@ function makeDraggable() {
 						    $(this).find('img').toggle();
 						}
 					},
-			touch:	function() {
+			touchstart:	function() {
 						if (card_flip) {
 						    console.log('flipping card: '+ $(this).data('card'));
     						$(this).find('img').toggle();
