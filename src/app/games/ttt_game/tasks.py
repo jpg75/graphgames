@@ -22,7 +22,7 @@ class NotifierTask(Task):
         srv = loads(conn.get('srv_credentials'))
         from socketIO_client import SocketIO as skio
         with skio('localhost', srv['port']) as s:
-            s.emit('notify_groups', retval)
+            s.emit('notify_groups', dumps(retval))
 
 
 @celery.task(bind=True, base=NotifierTask)
