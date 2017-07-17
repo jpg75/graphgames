@@ -96,8 +96,14 @@ def multiplayer_ready(message):
 
         else:  # table not yet available on redis
             # makes the table and set current player as a candidate for current game:
+            print "Building table and set current game id: %d for user %d in session %d" % (
+                session['game_type'], current_user.id, session['game_session'])
             redis.set('mp_table',
                       dumps({session['game_type']: [(current_user.id, session['game_session'])]}))
+            redis.set('srv_credentials', dumps({'host': 'localhost', 'port': app.config[
+                'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
+            print "set srv_credentials var in redis: ", redis.get('srv_credentials')
+
             timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
                                struct=session['game_cfg'])
 
@@ -144,6 +150,7 @@ def login(message):
         emit('set_multiplayer', {}, room=redis.hget('clients', current_user.email))
 
     else:
+        print "Simple game"
         serve_new_hand(current_user, session['game_session'])
 
 
@@ -225,17 +232,17 @@ def move(message):
 
 @socket_io.on('notify_groups')
 def notify_groups_handler(message):
-    print message
+    print "in handler, message: ", message
     ms = loads(message)
-    # conn = Redis()
 
     for group in ms['groups']:
+        print "Group: ", group
         # put each group into the redis set related to the game group:
         redis.sadd('groups_game_' + message['pid'], dumps(group))
 
         gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
         for participant in group:
-            u = User.query.filter_by(id=participant[0])
+            u = User.query.filter_by(id=participant[0]).first()
             # rns = clients.get(u.email, None)
             rns = redis.hget('clients', u.email)
             if rns:
@@ -244,12 +251,14 @@ def notify_groups_handler(message):
                 serve_new_hand(u, participant[1], multi_player=True)
 
     for failed in ms['failed']:
-        u = User.query.filter_by(id=failed[0])
-        # rns = clients.get(u.email, None)
+        # for failure in failed:
+        print "failed: ", failed
+        u = User.query.filter_by(id=failed[0]).first()
+        # print "user: ", u
         rns = redis.hget('clients', u.email)
+        print "rns: ", rns
         if rns:
-            # emit('abort_multiplayer', {}, room=clients[u.email])
-            emit('abort_multiplayer', {}, room=redis.hget('clients', u.email))
+            emit('abort_multiplayer', {}, room=rns)
 
 
 @socket_io.on('connect')
@@ -275,13 +284,16 @@ def disconnect():
         if table_json:
             table_obj = loads(table_json)
             print "table ", table_obj
-            gcandidates = table_obj[session['game_type']]
+            print session['game_type']
+            gcandidates = table_obj[str(session['game_type'])]
             print "candidates: ", gcandidates
+            # take all candidates which are not me:
             gcandidates = [item for item in gcandidates if item[0] != current_user.id]
+            print "candidates: ", gcandidates
             if len(gcandidates) != 0:
-                table_obj[session['game_type']] = gcandidates
-            else:
-                table_obj.pop(session['game_type'], None)
+                table_obj[str(session['game_type'])] = gcandidates
+            else:  # remove the whole entry for this game type if no candidates left:
+                table_obj.pop(str(session['game_type']), None)
 
             if table_obj:  # if not empty
                 redis.set('mp_table', dumps(table_obj))

@@ -160,6 +160,7 @@ class GameTypeAdminView(GGBasicAdminView):
     can_view_details = False
     create_modal = True
     edit_modal = True
+    can_edit = True
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-play', '/admin/game/{row_id}', title='Play')
     ]
