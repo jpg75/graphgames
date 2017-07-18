@@ -4,7 +4,7 @@ from flask_security import current_user
 from flask_socketio import emit
 from flask import request, session
 from datetime import datetime
-from ...models import Move, GameSession, User
+from ...models import Move, GameSession, User, GameType
 from json import dumps, loads
 from redis import Redis
 from tasks import timeout_task, bot_task, replay_task
@@ -63,17 +63,17 @@ def multiplayer_ready(message):
     :param message: the message is considered having an empty payload
     """
     if session['game_cfg']['enable_bot']:
-        serve_new_hand(current_user, session['game_session'])
+        serve_new_hand(current_user, session['game_session'], session['game_type'],
+                       session['game_cfg'], multi_player=False)
 
     else:  # manage the wait or start the game between the parties
-        # conn = Redis()
-
         # get mptable if any
         table = redis.get('mp_table')
         print "table: ", table
         if table:
             table_obj = loads(table)
-            mpdef = table_obj.get(session['game_type'], None)
+            print "table obj: ", table_obj
+            mpdef = table_obj.get(str(session['game_type']), None)
             # an entry for this mplayer session already exist, append the new player but checks
             # it is not already in:
             if mpdef and (current_user.id, session['game_session']) not in mpdef:
@@ -91,8 +91,8 @@ def multiplayer_ready(message):
                     'SOCKET_IO_PORT'], 'msg': 'notify_groups'}))
                 print "set srv_credentials var in redis: ", redis.get('srv_credentials')
 
-                timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
-                                   struct=session['game_cfg'])
+                # timeout_task.delay(gid=session['game_type'], sid=session['game_session'],
+                #                    struct=session['game_cfg'])
 
         else:  # table not yet available on redis
             # makes the table and set current player as a candidate for current game:
@@ -136,22 +136,20 @@ def login(message):
 
     if session['game_cfg']['replay']:
         print "Client have to replay a session"
-        # emit('set_replay', {}, room=clients[current_user.email])
         emit('set_replay', {}, room=redis.hget('clients', current_user.email))
 
     elif session['game_cfg']['enable_multiplayer'] and session['game_cfg']['enable_bot']:
         print "Client have to play a multi-user game (AI)"
-        # emit('set_multiplayer', {}, room=clients[current_user.email])
         emit('set_multiplayer', {}, room=redis.hget('clients', current_user.email))
 
     elif session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
         print "Client have to play a multi-user game"
-        # emit('set_multiplayer', {}, room=clients[current_user.email])
         emit('set_multiplayer', {}, room=redis.hget('clients', current_user.email))
 
     else:
         print "Simple game"
-        serve_new_hand(current_user, session['game_session'])
+        serve_new_hand(current_user, session['game_session'], session['game_type'],
+                       session['game_cfg'], multi_player=False)
 
 
 @socket_io.on('move')
@@ -179,9 +177,12 @@ def move(message):
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
         # Serve a new hand and the dummy move 'HAND' which represents the start of a hand:
         if session['game_cfg']['enable_multiplayer']:
-            next_hand = serve_new_hand(current_user, session['game_session'], multi_player=True)
+            next_hand = serve_new_hand(current_user, session['game_session'], session[
+                'game_type'], session['game_cfg'], multi_player=True)
         else:
-            next_hand = serve_new_hand(current_user, session['game_session'], multi_player=False)
+            # print "new session MP false"
+            next_hand = serve_new_hand(current_user, session['game_session'], session[
+                'game_type'], session['game_cfg'], multi_player=False)
 
         # when bots are enabled and next is NK, then the bot task is triggered:
         if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
@@ -204,7 +205,6 @@ def move(message):
 
         # when just multiplayer but no bot, forward the move to the other parties:
         if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
-            # conn = Redis()
             groups = redis.get('groups_game_' + session['game_type'])
             for group in groups:
                 group_obj = loads(group)
@@ -237,18 +237,19 @@ def notify_groups_handler(message):
 
     for group in ms['groups']:
         print "Group: ", group
-        # put each group into the redis set related to the game group:
-        redis.sadd('groups_game_' + message['pid'], dumps(group))
+        # put each group into the redis set related to the game group: 'groups_game_<gid>'
+        # index = "groups_game_%d" % ms['gid']
+        redis.sadd('groups_game_' + ms['gid'], dumps(group))
 
+        gc = GameType.query.filter_by(id=ms['gid']).first()
         gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
         for participant in group:
+            print "participant ", participant
             u = User.query.filter_by(id=participant[0]).first()
-            # rns = clients.get(u.email, None)
             rns = redis.hget('clients', u.email)
             if rns:
-                # emit('set_player', {'player': gen.next()}, room=clients[u.email])
                 emit('set_player', {'player': gen.next()}, room=redis.hget('clients', u.email))
-                serve_new_hand(u, participant[1], multi_player=True)
+                serve_new_hand(u, participant[1], ms['gid'], loads(gc.params), multi_player=True)
 
     for failed in ms['failed']:
         # for failure in failed:
@@ -273,9 +274,6 @@ def connect():
 
 @socket_io.on('disconnect')
 def disconnect():
-    # if 'replay_bot' in session:  # terminate a replay bot if any
-    #     session['replay_bot'].abort()
-
     if current_user.is_authenticated:
         # clients.pop(current_user.email, None)
         redis.hdel('clients', current_user.email)
@@ -305,12 +303,14 @@ def disconnect():
     print 'Client disconnected ', request.sid
 
 
-def serve_new_hand(user, sid, multi_player=False):
+def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
     """
     Generate the new hand according to the config and send a message to the client about it.
 
     :param user_email: user db object
     :param sid: session id
+    :param gid: game id
+    :param gconfig: dictionary holding the game configuration
     :param multi_player: flag signaling multi player game or not. When multi player, the mp_table
     structure on Redis DB, must be updated
     :return: a python dictionary describing the new hand. It is the same structure which is
@@ -333,14 +333,16 @@ def serve_new_hand(user, sid, multi_player=False):
 
         print "Serving new HAND: %s" % hand
         # emit('hand', {'success': 'ok', 'hand': hand,
+        #               'card_flip': session['game_cfg']['card_flip'],
         #               'covered': session['game_cfg']['covered'],
         #               'opponent_covered': session['game_cfg'][
-        #                   'opponent_covered']}, room=clients[user.email])
-        emit('hand', {'success': 'ok', 'hand': hand,
-                      'card_flip': session['game_cfg']['card_flip'],
-                      'covered': session['game_cfg']['covered'],
-                      'opponent_covered': session['game_cfg'][
-                          'opponent_covered']}, room=redis.hget('clients', user.email))
+        #                   'opponent_covered']}, room=redis.hget('clients', user.email))
+        emit('hand', {'seccess': 'ok', 'hand': hand,
+                      'card_flip': gconfig['card_flip'],
+                      'covered': gconfig['covered'],
+                      'opponent_covered': gconfig['opponent_covered']},
+             room=redis.hget('clients', user.email)
+             )
 
     else:
         print "session ended"
@@ -349,14 +351,15 @@ def serve_new_hand(user, sid, multi_player=False):
         gs.end = datetime.now()
         db.session.add(gs)
         db.session.commit()
-        # emit('gameover', {}, room=clients[user.email])
         emit('gameover', {}, room=redis.hget('clients', user.email))
+
         if multi_player:
-            # conn = Redis()
             table = redis.get('mp_table')
             if table:
                 table_obj = loads(table)
-                table_obj.pop(session['game_type'], None)
+                # table_obj.pop(session['game_type'], None)
+                table_obj.pop(gid, None)
+
                 if any(table_obj):
                     redis.set('mp_table', dumps(table_obj))
                 else:
