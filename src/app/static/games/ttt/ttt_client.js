@@ -21,6 +21,8 @@ let card_flip = true;  // whether or not allow flipping cards
 let opponent_covered = false;  // force the opponent card always covered
 let replay = false;  // support for replay of game sessions
 let multiplayer = false;    // support for multi player sessions
+/* current player turn. used in multiplayer mode where each client has a fixed player role */
+let active_player = null;
 
 /*
 * Handlers for network messages over socket-io (web-sockets)
@@ -477,9 +479,11 @@ function handleHand(message) {
 		else if (card == 'PL') {  // set player turn
 		    /* NOTE: this is the only case (in play mode) in which we call invertPlayers directly
 		    since we do not receive a 'toggle_players' message after a move that
-		    closes the current hand */
-		    if (val != player)
-		        invertPlayers($("#" + card));  // NEVER touch player var directly!
+		    closes the current hand. Works only if not in multiplayer mode, where the player is
+		    changed by the server. */
+		    if (!multiplayer)
+		        if (val != player)
+		            invertPlayers($("#" + card));  // NEVER touch player var directly!
 		}
 		else {
 		    // each card is updated with the corresponding figure:
@@ -496,6 +500,8 @@ function handleHand(message) {
 */
 function handleSetPlayer(message) {
     console.log("Set to player: " + message['player']);
+    // 1st set normal border to current player, than change it!
+    $("#" + player).css('border', '2px solid #333');
     player = message['player'];
     makeDraggable();
 }
