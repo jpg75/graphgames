@@ -205,7 +205,8 @@ def move(message):
 
         # when just multiplayer but no bot, forward the move to the other parties:
         if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
-            groups = redis.get('groups_game_' + session['game_type'])
+            groups = redis.get('groups_game_' + str(session['game_type']))
+            # groups = loads(groups)
             for group in groups:
                 group_obj = loads(group)
                 participants = []
@@ -216,8 +217,6 @@ def move(message):
                     for item in participants:
                         if item != current_user.id:
                             u = User.query.filter_by(id=item)
-                            # emit('external_move', {'move': message['move'], 'player': 'NK', },
-                            #     room=clients[u.email])
                             emit('external_move', {'move': message['move'], 'player': 'NK', },
                                  room=redis.hget('clients', u.email))
 
@@ -238,7 +237,15 @@ def notify_groups_handler(message):
     for group in ms['groups']:
         print "Group: ", group
         # put each group into the redis set related to the game group: 'groups_game_<gid>'
-        redis.sadd('groups_game_' + str(ms['gid']), dumps(group))
+
+        redis.hmset(str(group[0][0]) + ':' + str(group[0][1]),
+                    {'group': str(group[1][0]) + ':' + str(
+                        group[1][1]), 'gid': str(ms['gid'])})
+        redis.hmset(str(group[1][0]) + ':' + str(group[1][1]),
+                    {'group': str(group[0][0]) + ':' + str(
+                        group[0][1]), 'gid': str(ms['gid'])})
+
+        # redis.sadd('groups_game_' + str(ms['gid']), dumps(group))
 
         gc = GameType.query.filter_by(id=ms['gid']).first()
         gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
@@ -249,8 +256,7 @@ def notify_groups_handler(message):
             if rns:
                 next_p = gen.next()
                 print "Set to player CK user: %s" % (u.email)
-                emit('set_player', {'player': 'CK'}, room=redis.hget(
-                    'clients', u.email))
+                emit('set_player', {'player': 'CK'}, room=redis.hget('clients', u.email))
                 print "Set to player role %s user: %s" % (next_p, u.email)
                 emit('set_player_role', {'player_role': next_p}, room=redis.hget('clients',
                                                                                  u.email))
@@ -282,6 +288,8 @@ def disconnect():
     if current_user.is_authenticated:
         # clients.pop(current_user.email, None)
         redis.hdel('clients', current_user.email)
+        # removes its own group reference
+        redis.delete(str(current_user.id) + ':' + session['game_session'])
         # remove any client reference in mp_table:
         table_json = redis.get('mp_table')
         if table_json:
