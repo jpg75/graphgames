@@ -41,7 +41,7 @@ def timeout_task(self, gid, sid, struct):
         :return:
         """
     print "inside timeout task"
-    sleep(5)
+    sleep(8)
     print "exit from sleep"
     conn = Redis()
     mpt = loads(conn.get('mp_table'))
