@@ -238,8 +238,7 @@ def notify_groups_handler(message):
     for group in ms['groups']:
         print "Group: ", group
         # put each group into the redis set related to the game group: 'groups_game_<gid>'
-        # index = "groups_game_%d" % ms['gid']
-        redis.sadd('groups_game_' + ms['gid'], dumps(group))
+        redis.sadd('groups_game_' + str(ms['gid']), dumps(group))
 
         gc = GameType.query.filter_by(id=ms['gid']).first()
         gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
@@ -248,7 +247,13 @@ def notify_groups_handler(message):
             u = User.query.filter_by(id=participant[0]).first()
             rns = redis.hget('clients', u.email)
             if rns:
-                emit('set_player', {'player': gen.next()}, room=redis.hget('clients', u.email))
+                next_p = gen.next()
+                print "Set to player CK user: %s" % (u.email)
+                emit('set_player', {'player': 'CK'}, room=redis.hget(
+                    'clients', u.email))
+                print "Set to player role %s user: %s" % (next_p, u.email)
+                emit('set_player_role', {'player_role': next_p}, room=redis.hget('clients',
+                                                                                 u.email))
                 serve_new_hand(u, participant[1], ms['gid'], loads(gc.params), multi_player=True)
 
     for failed in ms['failed']:
