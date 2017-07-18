@@ -21,8 +21,9 @@ let card_flip = true;  // whether or not allow flipping cards
 let opponent_covered = false;  // force the opponent card always covered
 let replay = false;  // support for replay of game sessions
 let multiplayer = false;    // support for multi player sessions
-/* current player turn. used in multiplayer mode where each client has a fixed player role */
-let active_player = null;
+/* current player role. used in multi player mode where each client has a fixed player role.
+when multiplayer and player_role are different, no card can be operated by the user. */
+let player_role = false;
 
 /*
 * Handlers for network messages over socket-io (web-sockets)
@@ -52,6 +53,7 @@ socket.on('join', function(message) {
     }
 );
 socket.on('set_player', handleSetPlayer);
+socket.on('set_player_role', handleSetPlayerRole);
 socket.on('abort_multiplayer', function(message) {
     console.log('Multiplayer aborted.')
     if (message['comment']) {
@@ -270,8 +272,15 @@ function makeDraggable() {
     	}
     });
 
-	/* Enable the draggable(s) corresponding to the NK or CK cards*/
-	$('#'+player+ '> .card').draggable('enable');
+	/*
+	Enable the draggable(s) corresponding to the NK or CK cards.
+	when in multi player, no cards are enabled if player differs from player_role.
+	*/
+	if (player == player_role & multiplayer)  // WARNING: this will screwed up the BOT!!
+	    $('#'+player+ '> .card').draggable('enable');
+
+    if (!multiplayer)
+        $('#'+player+ '> .card').draggable('enable');
 
 	setCoveredCards();
 	eventuallyToggleOpponent();
@@ -500,10 +509,22 @@ function handleHand(message) {
 */
 function handleSetPlayer(message) {
     console.log("Set to player: " + message['player']);
+    // console.log("Set to player role: " + message['player_role']);
+
     // 1st set normal border to current player, than change it!
     $("#" + player).css('border', '2px solid #333');
     player = message['player'];
+    //player_role = message['player_role']
     makeDraggable();
+}
+
+/**
+* Handle the 'set_player_role' message sent from the server at the beginning of a multi player
+game session.
+*/
+function handleSetPlayerRole(message) {
+    console.log("Set to player role: " + message['player_role']);
+    player_role = message['player_role'];
 }
 
 /**
@@ -512,7 +533,7 @@ function handleSetPlayer(message) {
 */
 function handleTogglePlayers() {
     invertPlayers($('#'+player));
-    console.log("Switched to player: "+player);
+    console.log("Switched to player: " + player);
     makeDraggable();
 }
 
