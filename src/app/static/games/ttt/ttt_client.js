@@ -364,8 +364,7 @@ function emphasizeActivePlayer() {
 }
 
 /**
-* Invert the players and reset the previous player card slot with its basic
-* color. It is just called by a message handler.
+* Invert the players. It is just called by a message handler.
 */
 function invertPlayers($fromParent) {
 	if (player=='CK') {
@@ -431,16 +430,19 @@ function setCoveredCards() {
 
 /** 
 * Called when the PASS button is pressed. Invert the players and regenerate the 
-* card draggables.
+* card draggables. It does not work when in multi player and player != player_role.
 */
 function passMove(){
-	let output_n = $('.card').data('number');
-	console.log("Data: ", output_n);
-    // Send move before inverting players
-    sendMove('P', '');
-    score++;
+    if ((!multiplayer) || (multiplayer & player == player_role)) {
+        let output_n = $('.card').data('number');
+	    console.log("Data: ", output_n);
+        // Send move before inverting players
+        sendMove('P', '');
+        score++;
 
-	makeDraggable();
+    	makeDraggable();
+	}
+	else console.log('PASS button disabled!');
 }
 
 /*******************************************************************
