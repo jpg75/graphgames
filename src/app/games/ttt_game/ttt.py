@@ -155,17 +155,7 @@ def login(message):
 @socket_io.on('move')
 @authenticated_only
 def move(message):
-    """
-    When receiving a move from the client.
-    If in bot_enabled game session, it has to trigger the opponent by activating the celery bot.
-    If in multi player, it has to forward the current move to the opponent in order to keep the
-    clients state consistent.
-
-    :param message:
-    :return:
-    """
     print "received move: ", message
-    print current_user
     print current_user.id
     print current_user.email
     # It actually generates the timestamp now!
@@ -174,59 +164,165 @@ def move(message):
     db.session.add(m)
     db.session.commit()
 
+    # final move for the current hand:
     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
-        # Serve a new hand and the dummy move 'HAND' which represents the start of a hand:
+        print "Game changing move"
+        """ Serve a new hand and generate the dummy move 'HAND' which represents the start of a hand:
+            multi player case:"""
         if session['game_cfg']['enable_multiplayer']:
+            print "move multi player"
+            print "serving new hand to the current user: ", current_user.id
             next_hand = serve_new_hand(current_user, session['game_session'], session[
                 'game_type'], session['game_cfg'], multi_player=True)
-        else:
-            # print "new session MP false"
+
+            # when bots are enabled and next is NK, then bot task must be triggered:
+            # CAREFUL: the else branch must run ONLY when enable_bot is disabled!!
+            if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
+                print "multi player bot triggered"
+                bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+                               hand=next_hand['panel'][next_hand['panel']['PL']],
+                               up=next_hand['panel']['U'], target=next_hand['panel']['T'])
+
+                print "hand ", next_hand['panel'][next_hand['panel']['PL']]
+                print "up: ", next_hand['panel']['U']
+                print "target ", next_hand['panel']['T']
+
+            elif not session['game_cfg']['enable_bot']:
+                """ this MP session os not with a bot, but with a human: we send the hand to the
+                    other party"""
+                # get the other party from Redis:
+                gitem, gid = redis.hmget(str(current_user.id) + ':' + str(session['game_session']),
+                                         'group', 'gid')
+                other_user = User.query.filter_by(id=int(gitem.split(':')[0])).first()
+                # send the last move to the other party:
+                emit('external_move', {'move': message['move'], 'player': message['player']},
+                     room=redis.hget('clients', other_user.email))
+
+                print "Serving new hand to the other player: %d" % other_user.id
+                serve_new_hand(other_user, int(gitem.split(':')[1]), int(gid),
+                               multi_player=True)
+
+                # NOTE: should also send a set_player message!
+
+        else:  # single player: just send hand message: no need to send set_player or invert_players
             next_hand = serve_new_hand(current_user, session['game_session'], session[
                 'game_type'], session['game_cfg'], multi_player=False)
 
-        # when bots are enabled and next is NK, then the bot task is triggered:
-        if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
-            bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
-                           hand=next_hand['panel'][next_hand['panel']['PL']],
-                           up=next_hand['panel']['U'], target=next_hand['panel']['T'])
-
-            print "hand ", next_hand['panel'][next_hand['panel']['PL']]
-            print "up: ", next_hand['panel']['U']
-            print "target ", next_hand['panel']['T']
-
-    else:
+    else:  # just a regular move:
         player = message['player']
         if player == 'CK':
             player = 'NK'
         else:
             player = 'CK'
 
-        emit('toggle_players', {'player': player}, room=redis.hget('clients', current_user.email))
+        print "Basic move"
+        if session['game_cfg']['enable_multiplayer']:
+            print "move multi player"
+            # if bot enabled, trigger the celery bot:
+            if session['game_cfg']['enable_bot']:
+                print "multi player bot triggered"
+                bot_task.delay(url='redis://localhost:6379/0',
+                               sid=session['game_session'],
+                               hand=message['panel'][player],
+                               up=message['panel']['U'],
+                               target=message['panel']['T'])
 
-        # when just multiplayer but no bot, forward the move to the other parties:
-        if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
-            groups = redis.get('groups_game_' + str(session['game_type']))
-            # groups = loads(groups)
-            for group in groups:
-                group_obj = loads(group)
-                participants = []
-                for item in group_obj:
-                    participants.append(item[0])
+            else:  # multi player among humans: forward the move to the other parties
+                # get the other party from Redis:
+                gitem, gid = redis.hmget(str(current_user.id) + ':' + str(session['game_session']),
+                                         'group', 'gid')
+                other_user = User.query.filter_by(id=int(gitem.split(':')[0])).first()
+                print "Forward move to uid: %d" % other_user.id
 
-                if current_user.id in participants:
-                    for item in participants:
-                        if item != current_user.id:
-                            u = User.query.filter_by(id=item)
-                            emit('external_move', {'move': message['move'], 'player': 'NK', },
-                                 room=redis.hget('clients', u.email))
+                # No need to trigger a toggle_player since it is automatic in external_move
+                emit('external_move', {'move': message['move'], 'player': message['player']},
+                     room=redis.hget('clients', other_user.email))
 
-        # if bot enabled, trigger the celery bot:
-        if session['game_cfg']['enable_bot']:
-            bot_task.delay(url='redis://localhost:6379/0',
-                           sid=session['game_session'],
-                           hand=message['panel'][player],
-                           up=message['panel']['U'],
-                           target=message['panel']['T'])
+                print "toggle player to the current user: ", current_user.id
+                emit('toggle_players', {'player': player},
+                     room=redis.hget('clients', current_user.email))
+
+        else:  # single player: just send toggle_player message
+            print "Move toggle player"
+            emit('toggle_players', {'player': player},
+                 room=redis.hget('clients', current_user.email))
+
+
+# @socket_io.on('move')
+# @authenticated_only
+# def move(message):
+#     """
+#     When receiving a move from the client.
+#     If in bot_enabled game session, it has to trigger the opponent by activating the celery bot.
+#     If in multi player, it has to forward the current move to the opponent in order to keep the
+#     clients state consistent.
+#
+#     :param message:
+#     :return:
+#     """
+#     print "received move: ", message
+#     print current_user
+#     print current_user.id
+#     print current_user.email
+#     # It actually generates the timestamp now!
+#     m = Move(uid=current_user.id, sid=session['game_session'], mv=dumps(message),
+#              play_role=message['player'], ts=datetime.now())
+#     db.session.add(m)
+#     db.session.commit()
+#
+#     if message['move'] == 'T' and message['moved_card'] == message['goal_card']:
+#         # Serve a new hand and the dummy move 'HAND' which represents the start of a hand:
+#         if session['game_cfg']['enable_multiplayer']:
+#             next_hand = serve_new_hand(current_user, session['game_session'], session[
+#                 'game_type'], session['game_cfg'], multi_player=True)
+#         else:
+#             # print "new session MP false"
+#             next_hand = serve_new_hand(current_user, session['game_session'], session[
+#                 'game_type'], session['game_cfg'], multi_player=False)
+#
+#         # when bots are enabled and next is NK, then the bot task is triggered:
+#         if next_hand and session['game_cfg']['enable_bot'] and next_hand['panel']['PL'] == 'NK':
+#             bot_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
+#                            hand=next_hand['panel'][next_hand['panel']['PL']],
+#                            up=next_hand['panel']['U'], target=next_hand['panel']['T'])
+#
+#             print "hand ", next_hand['panel'][next_hand['panel']['PL']]
+#             print "up: ", next_hand['panel']['U']
+#             print "target ", next_hand['panel']['T']
+#
+#     else:
+#         player = message['player']
+#         if player == 'CK':
+#             player = 'NK'
+#         else:
+#             player = 'CK'
+#
+#         emit('toggle_players', {'player': player}, room=redis.hget('clients', current_user.email))
+#
+#         # when just multiplayer but no bot, forward the move to the other parties:
+#         if session['game_cfg']['enable_multiplayer'] and not session['game_cfg']['enable_bot']:
+#             groups = redis.get('groups_game_' + str(session['game_type']))
+#             # groups = loads(groups)
+#             for group in groups:
+#                 group_obj = loads(group)
+#                 participants = []
+#                 for item in group_obj:
+#                     participants.append(item[0])
+#
+#                 if current_user.id in participants:
+#                     for item in participants:
+#                         if item != current_user.id:
+#                             u = User.query.filter_by(id=item)
+#                             emit('external_move', {'move': message['move'], 'player': 'NK', },
+#                                  room=redis.hget('clients', u.email))
+#
+#         # if bot enabled, trigger the celery bot:
+#         if session['game_cfg']['enable_bot']:
+#             bot_task.delay(url='redis://localhost:6379/0',
+#                            sid=session['game_session'],
+#                            hand=message['panel'][player],
+#                            up=message['panel']['U'],
+#                            target=message['panel']['T'])
 
 
 @socket_io.on('notify_groups')
@@ -260,7 +356,11 @@ def notify_groups_handler(message):
                 print "Set to player role %s user: %s" % (next_p, u.email)
                 emit('set_player_role', {'player_role': next_p}, room=redis.hget('clients',
                                                                                  u.email))
+                print "Set player and role"
+                print gc.params
+                print loads(gc.params)
                 serve_new_hand(u, participant[1], ms['gid'], loads(gc.params), multi_player=True)
+                print "after hand"
 
     for failed in ms['failed']:
         # for failure in failed:
@@ -286,10 +386,11 @@ def connect():
 @socket_io.on('disconnect')
 def disconnect():
     if current_user.is_authenticated:
+        print "disconnecting user %d..." % current_user.id
         # clients.pop(current_user.email, None)
         redis.hdel('clients', current_user.email)
         # removes its own group reference
-        redis.delete(str(current_user.id) + ':' + session['game_session'])
+        redis.delete(str(current_user.id) + ':' + str(session['game_session']))
         # remove any client reference in mp_table:
         table_json = redis.get('mp_table')
         if table_json:
@@ -331,6 +432,7 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
     """
     next_hand_record = None
     session_config = user_d[user.email]
+    print "in new hand"
     if len(session_config.content) > 0:
         hand = session_config.content.pop(0)
         hand = hand.upper()
@@ -344,13 +446,12 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         db.session.add(m2)
         db.session.commit()
 
-        print "Serving new HAND: %s" % hand
-        # emit('hand', {'success': 'ok', 'hand': hand,
-        #               'card_flip': session['game_cfg']['card_flip'],
-        #               'covered': session['game_cfg']['covered'],
-        #               'opponent_covered': session['game_cfg'][
-        #                   'opponent_covered']}, room=redis.hget('clients', user.email))
-        emit('hand', {'seccess': 'ok', 'hand': hand,
+        print "Serving new HAND: %s to user: %d sid: %d" % (hand, user.id, sid)
+        print "filp: ", gconfig['card_flip']
+        print "covered: ", gconfig['covered']
+        print "opponent: ", gconfig['opponent_covered']
+
+        emit('hand', {'success': 'ok', 'hand': hand,
                       'card_flip': gconfig['card_flip'],
                       'covered': gconfig['covered'],
                       'opponent_covered': gconfig['opponent_covered']},
