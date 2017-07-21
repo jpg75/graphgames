@@ -63,8 +63,11 @@ def multiplayer_ready(message):
     :param message: the message is considered having an empty payload
     """
     if session['game_cfg']['enable_bot']:
-        serve_new_hand(current_user, session['game_session'], session['game_type'],
-                       session['game_cfg'], multi_player=False)
+        payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
+                                 session['game_cfg'], multi_player=False)
+        emit('hand', payload, room=redis.hget('clients', current_user.email))
+        # serve_new_hand(current_user, session['game_session'], session['game_type'],
+        #                session['game_cfg'], multi_player=False)
 
     else:  # manage the wait or start the game between the parties
         # get mptable if any
@@ -148,8 +151,12 @@ def login(message):
 
     else:
         print "Simple game"
-        serve_new_hand(current_user, session['game_session'], session['game_type'],
-                       session['game_cfg'], multi_player=False)
+        payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
+                                 session['game_cfg'], multi_player=False)
+        print "payload: ", payload
+        emit('hand', payload, room=redis.hget('clients', current_user.email))
+        # serve_new_hand(current_user, session['game_session'], session['game_type'],
+        #                session['game_cfg'], multi_player=False)
 
 
 @socket_io.on('move')
@@ -172,8 +179,14 @@ def move(message):
         if session['game_cfg']['enable_multiplayer']:
             print "move multi player"
             print "serving new hand to the current user: ", current_user.id
-            next_hand = serve_new_hand(current_user, session['game_session'], session[
-                'game_type'], session['game_cfg'], multi_player=True)
+            # serve next_hand to the current user or quits game if no more hands
+            next_hand = serve_new_hand(current_user, session['game_session'], session['game_type'],
+                                       session['game_cfg'], multi_player=False)
+            emit('hand', next_hand, room=redis.hget('clients', current_user.email)) if next_hand \
+                else \
+                emit('gameover', {}, room=redis.hget('clients', current_user.email))
+            # next_hand = serve_new_hand(current_user, session['game_session'], session[
+            #     'game_type'], session['game_cfg'], multi_player=True)
 
             # when bots are enabled and next is NK, then bot task must be triggered:
             # CAREFUL: the else branch must run ONLY when enable_bot is disabled!!
@@ -199,14 +212,24 @@ def move(message):
                      room=redis.hget('clients', other_user.email))
 
                 print "Serving new hand to the other player: %d" % other_user.id
-                serve_new_hand(other_user, int(gitem.split(':')[1]), int(gid),
-                               multi_player=True)
+                # serve new hand or quit message if no more hands available
+                payload = serve_new_hand(other_user, session['game_session'],
+                                         session['game_type'],
+                                         session['game_cfg'], multi_player=False)
+                emit('hand', payload, room=redis.hget('clients', other_user.email)) if payload else \
+                    emit('gameover', {}, room=redis.hget('clients', other_user.email))
+                # serve_new_hand(other_user, int(gitem.split(':')[1]), int(gid),
+                #                multi_player=True)
 
                 # NOTE: should also send a set_player message!
 
         else:  # single player: just send hand message: no need to send set_player or invert_players
-            next_hand = serve_new_hand(current_user, session['game_session'], session[
-                'game_type'], session['game_cfg'], multi_player=False)
+            payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
+                                     session['game_cfg'], multi_player=False)
+            emit('hand', payload, room=redis.hget('clients', current_user.email)) if payload else \
+                emit('gameover', {}, room=redis.hget('clients', current_user.email))
+            # serve_new_hand(current_user, session['game_session'], session[
+            #     'game_type'], session['game_cfg'], multi_player=False)
 
     else:  # just a regular move:
         player = message['player']
@@ -341,8 +364,6 @@ def notify_groups_handler(message):
                     {'group': str(group[0][0]) + ':' + str(
                         group[0][1]), 'gid': str(ms['gid'])})
 
-        # redis.sadd('groups_game_' + str(ms['gid']), dumps(group))
-
         gc = GameType.query.filter_by(id=ms['gid']).first()
         gen = ttt_player_gen()  # WARNING: in ttt no more than 2 participant
         for participant in group:
@@ -357,10 +378,12 @@ def notify_groups_handler(message):
                 emit('set_player_role', {'player_role': next_p}, room=redis.hget('clients',
                                                                                  u.email))
                 print "Set player and role"
-                print gc.params
-                print loads(gc.params)
-                serve_new_hand(u, participant[1], ms['gid'], loads(gc.params), multi_player=True)
-                print "after hand"
+                # print gc.params
+                # print loads(gc.params)
+                payload = serve_new_hand(u, participant[1], ms['gid'], loads(gc.params),
+                                         multi_player=True)
+                emit('hand', payload, room=redis.hget('clients', u.email))
+                # print "after hand"
 
     for failed in ms['failed']:
         # for failure in failed:
@@ -438,7 +461,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         hand = hand.upper()
         hand = hand.split()
         hand = dict(zip(_SHOE_FILE_ORDER, hand))
-
         next_hand_record = {'move': 'HAND', 'panel': hand}
 
         m2 = Move(uid=user.id, sid=sid, mv=dumps(next_hand_record),
@@ -451,12 +473,16 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         print "covered: ", gconfig['covered']
         print "opponent: ", gconfig['opponent_covered']
 
-        emit('hand', {'success': 'ok', 'hand': hand,
-                      'card_flip': gconfig['card_flip'],
-                      'covered': gconfig['covered'],
-                      'opponent_covered': gconfig['opponent_covered']},
-             room=redis.hget('clients', user.email)
-             )
+        next_hand_record = {'success': 'ok', 'hand': hand,
+                            'card_flip': gconfig['card_flip'],
+                            'covered': gconfig['covered'],
+                            'opponent_covered': gconfig['opponent_covered']}
+        # emit('hand', {'success': 'ok', 'hand': hand,
+        #               'card_flip': gconfig['card_flip'],
+        #               'covered': gconfig['covered'],
+        #               'opponent_covered': gconfig['opponent_covered']},
+        #      room=redis.hget('clients', user.email)
+        #      )
 
     else:
         print "session ended"
@@ -465,7 +491,7 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         gs.end = datetime.now()
         db.session.add(gs)
         db.session.commit()
-        emit('gameover', {}, room=redis.hget('clients', user.email))
+        # emit('gameover', {}, room=redis.hget('clients', user.email))
 
         if multi_player:
             table = redis.get('mp_table')
