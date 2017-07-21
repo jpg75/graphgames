@@ -184,6 +184,26 @@ class SessionAdminView(GGBasicAdminView):
         #              title='Show graph')
     ]
 
+    @action('delete', 'Delete', 'Are you sure to delete the selected rows?')
+    def action_delete(self, ids):
+        try:
+            from models import MPSession, GameSession, Move
+            # mp_records = MPSession.queery.filter(MPSession.sids.contains(ids))
+
+            gs_records = GameSession.query.filter(GameSession.id.in_(ids)).all()
+            m_records = Move.query.filter(Move.sid.in_(ids)).all()
+            for item in gs_records:
+                db.session.delete(item)
+            for item in m_records:
+                db.session.delete(item)
+            db.session.commit()
+            return flash("The selected Sessions and related Moves has been deleted.")
+
+        except Exception as e:
+            if not self.handle_view_exception(e):
+                raise
+            return flash("Impossible to delete data")
+
     @action('download', 'Download (Nemik format)', 'Are you sure you want to download selected '
                                                    'session data in Nemik format?')
     def action_download(self, ids):
@@ -257,3 +277,30 @@ class MPSessionAdminView(GGBasicAdminView):
     can_create = False
     can_view_details = False
     column_list = ['id', 'gid', 'sids', 'users']
+
+    @action('delete', 'Delete', 'Are you sure to delete the selected rows?')
+    def action_delete(self, ids):
+        try:
+            from models import MPSession, GameSession, Move
+            mp_records = MPSession.query.filter(MPSession.id.in_(ids)).all()
+            sids = []
+            for item in mp_records:
+                sids.extend(item.sids.split())
+
+            gs_records = GameSession.query.filter(GameSession.id.in_(sids)).all()
+            m_records = Move.query.filter(Move.sid.in_(sids)).all()
+
+            for item in mp_records:
+                db.session.delete(item)
+            for item in gs_records:
+                db.session.delete(item)
+            for item in m_records:
+                db.session.delete(item)
+
+            db.session.commit()
+            return flash("The selected Sessions and related Moves has been deleted.")
+
+        except Exception as e:
+            if not self.handle_view_exception(e):
+                raise
+            return flash("Impossible to delete data")
