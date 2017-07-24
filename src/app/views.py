@@ -188,7 +188,9 @@ class SessionAdminView(GGBasicAdminView):
     def action_delete(self, ids):
         try:
             from models import MPSession, GameSession, Move
-            # mp_records = MPSession.queery.filter(MPSession.sids.contains(ids))
+            mp_records = []
+            for sid in ids:
+                mp_records.extend(MPSession.query.filter(MPSession.sids.contains(sid)))
 
             gs_records = GameSession.query.filter(GameSession.id.in_(ids)).all()
             m_records = Move.query.filter(Move.sid.in_(ids)).all()
@@ -196,6 +198,9 @@ class SessionAdminView(GGBasicAdminView):
                 db.session.delete(item)
             for item in m_records:
                 db.session.delete(item)
+            for item in mp_records:
+                db.session.delete(item)
+
             db.session.commit()
             return flash("The selected Sessions and related Moves has been deleted.")
 
