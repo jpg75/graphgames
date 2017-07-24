@@ -50,6 +50,18 @@ def timeout_task(self, gid, sid, struct):
               'failed': []
               }
     print "mpt: ", mpt
+    game_users = dict()
+    # Generate a dictionary from the user mapping in users file if any
+    try:
+        if struct['mp_users']:
+            with open(struct['mp_users']) as f:
+                lines = f.readlines()
+                for x in lines:
+                    key, value = x.split()
+                    game_users[key] = value
+
+    except KeyError:
+        print "No available mp_users file for this game instance."
 
     # making groups:
     for game_id in mpt:
