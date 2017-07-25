@@ -229,8 +229,6 @@ $(document).ready(function () {
 				/* Current valid move, sent before inverting players. Currently, the
 				 server handles the switching to another user (role).
 				*/
-				// sendMove($toParent.attr('id'), moved_card);
-
 				window.endPos = $to.offset();
 
 				swap($from, $from.offset(), window.endPos, 200);
@@ -477,7 +475,8 @@ function handleHand(message) {
 	console.log(covered);
 
 	if (!replay) {
-	    window.alert("New hand");
+        setTimeout(function() { alert('New Hand'); }, 1);
+        //window.alert("New hand");
 	}
 	$.fx.off = true;  // disable ALL animations
  			

@@ -203,14 +203,15 @@ def move(message):
                 # get the other party from Redis:
                 gitem, gid = redis.hmget(str(current_user.id) + ':' + str(session['game_session']),
                                          'group', 'gid')
-                other_user = User.query.filter_by(id=int(gitem.split(':')[0])).first()
+                other_user_id, other_user_sid = gitem.split(':')
+                other_user = User.query.filter_by(id=int(other_user_id)).first()
                 # send the last move to the other party:
                 emit('external_move', {'move': message['move'], 'player': message['player']},
                      room=redis.hget('clients', other_user.email))
 
                 print "Serving new hand to the other player: %d" % other_user.id
                 # serve new hand or quit message if no more hands available
-                payload = serve_new_hand(other_user, session['game_session'],
+                payload = serve_new_hand(other_user, int(other_user_sid),
                                          session['game_type'],
                                          session['game_cfg'], multi_player=True)
                 if payload:
