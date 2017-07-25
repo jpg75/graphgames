@@ -36,10 +36,12 @@ socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
     if (message['comment']) {
-        window.alert('Game Over: '+ message['comment']);
+        $("<p>Game Over: "+message['comment']+"</p>").alert();
+        // window.alert('Game Over: '+ message['comment']);
     }
 	else {
-	    window.alert('Game Over: Session ended or timed-out');
+	    $("<p>Game Over: Session ended or timed-out</p>").alert();
+        // window.alert('Game Over: Session ended or timed-out');
 	}
 });
 socket.on('toggle_players', handleTogglePlayers);
@@ -57,10 +59,12 @@ socket.on('set_player_role', handleSetPlayerRole);
 socket.on('abort_multiplayer', function(message) {
     console.log('Multiplayer aborted.')
     if (message['comment']) {
-        window.alert('Multiplayer session aborted: '+ message['comment']);
+        $("<p>Multiplayer session aborted: "+ message['comment']+"</p>").alert();
+        // window.alert('Multiplayer session aborted: '+ message['comment']);
     }
 	else {
-	    window.alert('Sorry, multiplayer session failed or timed out: please try again.');
+	    $("<p>Sorry, multiplayer session failed or timed out: please try again</p>").alert();
+	    // window.alert('Sorry, multiplayer session failed or timed out: please try again.');
 	}
 }
 );
@@ -475,7 +479,7 @@ function handleHand(message) {
 	console.log(covered);
 
 	if (!replay) {
-        setTimeout(function() { alert('New Hand'); }, 1);
+        $("<p>New Hand</p>").alert();
         //window.alert("New hand");
 	}
 	$.fx.off = true;  // disable ALL animations
@@ -553,7 +557,8 @@ function handleTogglePlayers() {
 function handleSetMultiplayer(message) {
     console.log('Multiplayer mode ENABLED');
     multiplayer = true;
-    window.alert('Ready for a multiplayer session');
+    // window.alert('Ready for a multiplayer session');
+    $("<p>Ready for a multiplayer session</p>").alert();
 
     socket.emit('multiplayer_ready', {}); // notify the server we are ready
 }
@@ -564,8 +569,8 @@ function handleSetMultiplayer(message) {
 function handleSetReplay(message) {
     console.log('Replay mode ENABLED');
     replay = true;
-    window.alert('Ready to replay session');
-
+    // window.alert('Ready to replay session');
+    $("<p>Ready to replay session</p>").alert();
     socket.emit('replay_ready', {}); // notify the server we are ready
 }
 
