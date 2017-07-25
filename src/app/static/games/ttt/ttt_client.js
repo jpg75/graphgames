@@ -492,9 +492,18 @@ function handleHand(message) {
 		    since we do not receive a 'toggle_players' message after a move that
 		    closes the current hand. Works only if not in multiplayer mode, where the player is
 		    changed by the server. */
+		    console.log("multiplayer: "+ multiplayer);
 		    if (!multiplayer)
+		        console.log("NOT multiplayer!")
 		        if (val != player)
 		            invertPlayers($("#" + card));  // NEVER touch player var directly!
+            else { // multi player mode:
+                console.log("HAND multiplayer, role: "+player_role+ " player turn: "+player+ " val: "+val);
+                if (player_role == val && val != player) {
+                    console.log("Inverting: "+card+ " "+val);
+                    invertPlayers($("#" + card));
+                }
+            }
 		}
 		else {
 		    // each card is updated with the corresponding figure:

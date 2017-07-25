@@ -66,8 +66,6 @@ def multiplayer_ready(message):
         payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
                                  session['game_cfg'], multi_player=False)
         emit('hand', payload, room=redis.hget('clients', current_user.email))
-        # serve_new_hand(current_user, session['game_session'], session['game_type'],
-        #                session['game_cfg'], multi_player=False)
 
     else:  # manage the wait or start the game between the parties
         # get mptable if any
@@ -155,8 +153,6 @@ def login(message):
                                  session['game_cfg'], multi_player=False)
         print "payload: ", payload
         emit('hand', payload, room=redis.hget('clients', current_user.email))
-        # serve_new_hand(current_user, session['game_session'], session['game_type'],
-        #                session['game_cfg'], multi_player=False)
 
 
 @socket_io.on('move')
@@ -184,7 +180,8 @@ def move(message):
                                        session['game_cfg'], multi_player=False)
             if next_hand:
                 emit('hand', next_hand, room=redis.hget('clients', current_user.email))
-                emit('toggle_player', {}, room=redis.hget('clients', current_user.email))
+                # print "serving toggle_player to the current user: ", current_user.id
+                # emit('toggle_player', {}, room=redis.hget('clients', current_user.email))
             else:
                 emit('gameover', {}, room=redis.hget('clients', current_user.email))
 
@@ -218,7 +215,8 @@ def move(message):
                                          session['game_cfg'], multi_player=False)
                 if payload:
                     emit('hand', payload, room=redis.hget('clients', other_user.email))
-                    emit('toggle_player', {}, room=redis.hget('clients', other_user.email))
+                    # print "Serving toggle player to the other player: %d" % other_user.id
+                    # emit('toggle_player', {}, room=redis.hget('clients', other_user.email))
                 else:
                     emit('gameover', {}, room=redis.hget('clients', other_user.email))
 
@@ -292,18 +290,15 @@ def notify_groups_handler(message):
             rns = redis.hget('clients', u.email)
             if rns:
                 next_p = gen.next()
-                print "Set to player CK user: %s" % (u.email)
-                emit('set_player', {'player': 'CK'}, room=redis.hget('clients', u.email))
+                # print "Set to player CK user: %s" % (u.email)
+                # emit('set_player', {'player': 'CK'}, room=redis.hget('clients', u.email))
                 print "Set to player role %s user: %s" % (next_p, u.email)
                 emit('set_player_role', {'player_role': next_p}, room=redis.hget('clients',
                                                                                  u.email))
                 print "Set player and role"
-                # print gc.params
-                # print loads(gc.params)
                 payload = serve_new_hand(u, participant[1], ms['gid'], loads(gc.params),
                                          multi_player=True)
                 emit('hand', payload, room=redis.hget('clients', u.email))
-                # print "after hand"
 
     for failed in ms['failed']:
         # for failure in failed:
@@ -363,6 +358,7 @@ def disconnect():
 def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
     """
     Generate the new hand according to the config and send a message to the client about it.
+    When the session ends it is responsible to close the session(s) on db.
 
     :param user_email: user db object
     :param sid: session id
@@ -389,9 +385,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         db.session.commit()
 
         print "Serving new HAND: %s to user: %d sid: %d" % (hand, user.id, sid)
-        print "filp: ", gconfig['card_flip']
-        print "covered: ", gconfig['covered']
-        print "opponent: ", gconfig['opponent_covered']
 
         next_hand_record = {'success': 'ok', 'hand': hand,
                             'card_flip': gconfig['card_flip'],
@@ -405,10 +398,10 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         gs.end = datetime.now()
         db.session.add(gs)
         db.session.commit()
-        # emit('gameover', {}, room=redis.hget('clients', user.email))
 
         if multi_player:
             table = redis.get('mp_table')
+            print table
             if table:
                 table_obj = loads(table)
                 # table_obj.pop(session['game_type'], None)
