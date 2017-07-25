@@ -177,7 +177,7 @@ def move(message):
             print "serving new hand to the current user: ", current_user.id
             # serve next_hand to the current user or quits game if no more hands
             next_hand = serve_new_hand(current_user, session['game_session'], session['game_type'],
-                                       session['game_cfg'], multi_player=False)
+                                       session['game_cfg'], multi_player=True)
             if next_hand:
                 emit('hand', next_hand, room=redis.hget('clients', current_user.email))
                 # print "serving toggle_player to the current user: ", current_user.id
@@ -212,7 +212,7 @@ def move(message):
                 # serve new hand or quit message if no more hands available
                 payload = serve_new_hand(other_user, session['game_session'],
                                          session['game_type'],
-                                         session['game_cfg'], multi_player=False)
+                                         session['game_cfg'], multi_player=True)
                 if payload:
                     emit('hand', payload, room=redis.hget('clients', other_user.email))
                     # print "Serving toggle player to the other player: %d" % other_user.id
@@ -401,11 +401,18 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
 
         if multi_player:
             table = redis.get('mp_table')
-            print table
+            print "table: ", table
             if table:
                 table_obj = loads(table)
-                # table_obj.pop(session['game_type'], None)
-                table_obj.pop(gid, None)
+                lst = table_obj.pop(str(gid), None)
+                # ends the sessions part of the multi player match
+                for item in lst:
+                    _, s = item
+                    if sid != s:
+                        gs = GameSession.query.filter_by(id=s).first()
+                        gs.end = datetime.now()
+                        db.session.add(gs)
+                        db.session.commit()
 
                 if any(table_obj):
                     redis.set('mp_table', dumps(table_obj))
