@@ -173,7 +173,7 @@ class GameType(db.Model):
                              'N': True, 'U': False, 'T': False},
                  'opponent_covered': True}
             ),
-            'Small TTT Solo MP': (
+            'Small TTT MP': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
                  'replay': False,
