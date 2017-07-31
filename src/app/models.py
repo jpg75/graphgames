@@ -75,6 +75,10 @@ def init_db():
                                            password=encrypt_password('botpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
+            u = user_datastore.create_user(email='ccalluso@graphgames.org',
+                                           password=encrypt_password('ccpasswd'))
+            user_datastore.add_role_to_user(u, adm_role)
+
         db.session.commit()
 
         if not GameType.query.first():
@@ -85,7 +89,7 @@ class Move(db.Model):
     __tablename__ = 'moves'
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
-    sid = db.Column(db.Integer)
+    sid = db.Column(db.Integer, db.ForeignKey('game_sessions.id'))
     mv = db.Column(db.String(64))
     play_role = db.Column(db.String(64))
     ts = db.Column(db.DateTime)
@@ -101,6 +105,8 @@ class GameSession(db.Model):
     type = db.Column(db.Integer, db.ForeignKey('game_types.id'))
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
+
+    moves = db.relationship('Move', backref='game_session', lazy='dynamic')
 
     def __repr__(self):
         return 'Session %r, type %r, started: %r, ended: %r' % (self.id, self.type, self.start,
