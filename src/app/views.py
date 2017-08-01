@@ -1,5 +1,5 @@
 from flask import send_file, flash, session, abort, redirect, request, url_for
-from flask_admin import expose
+from flask_admin import BaseView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.base import AdminIndexView
 from flask_admin.actions import action
@@ -309,3 +309,35 @@ class MPSessionAdminView(GGBasicAdminView):
             if not self.handle_view_exception(e):
                 raise
             return flash("Impossible to delete data")
+
+
+class StatsView(BaseView):
+    can_edit = False
+    can_create = False
+
+    def __init__(self, ssion, name=None, category=None, endpoint=None, url=None,
+                 static_folder=None,
+                 menu_class_name=None, menu_icon_type=None, menu_icon_value=None):
+        self.session = ssion
+
+        super(StatsView, self).__init__(name, category, endpoint, url, static_folder,
+                                        menu_class_name=menu_class_name,
+                                        menu_icon_type=menu_icon_type,
+                                        menu_icon_value=menu_icon_value)
+
+    @expose('/')
+    def index(self):
+        from models import MPSession, GameSession, Move, User
+        from sqlalchemy import desc
+
+        data = []
+        records = GameSession.query.filter(GameSession.end != None).order_by(
+            desc(GameSession.end - GameSession.start)).limit(10).all()
+
+        for item in records:
+            user = User.query.get(item.uid)
+            score = item.moves.filter(~Move.mv.contains('\"move\": \"HAND\"')).count()
+            data.append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
+                         'score': score, 'gid': item.type, 'time': item.end - item.start})
+
+        return self.render('admin/stats.html', stats=data)

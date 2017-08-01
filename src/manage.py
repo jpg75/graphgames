@@ -4,7 +4,7 @@ from os import path
 from flask import url_for
 from app import db, socket_io, app, admin
 from app.views import UserAdminView, GameTypeAdminView, SessionAdminView, MPSessionAdminView, \
-    GGFileAdmin
+    GGFileAdmin, StatsView
 from app.models import User, Role, Move, GameSession, GameType, MPSession, user_datastore, init_db
 from flask_script import Manager, Shell
 from flask_migrate import Migrate, MigrateCommand
@@ -29,6 +29,7 @@ admin.add_view(UserAdminView(User, db.session, name='Users'))
 admin.add_view(SessionAdminView(GameSession, db.session, name='Sessions'))
 admin.add_view(MPSessionAdminView(MPSession, db.session, name='MPSessions'))
 admin.add_view(GameTypeAdminView(GameType, db.session, name='Games'))
+admin.add_view(StatsView(ssion=db.session, name='Stats', endpoint='stats'))
 
 mypath = path.join(path.dirname(__file__), 'app/static')
 print "path: ", mypath
