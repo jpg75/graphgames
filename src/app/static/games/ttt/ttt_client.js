@@ -35,6 +35,9 @@ socket.on('connect', function() {
 socket.on('hand', handleHand);
 socket.on('gameover', function(message) {
     console.log('Game over.');
+    if (multiplayer)
+        initCardsData(); // updates the score in case of multiplayer last move
+
     if (message['comment']) {
         $("<p>Game Over: "+message['comment']+"</p>").alert();
         // window.alert('Game Over: '+ message['comment']);
