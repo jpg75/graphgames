@@ -496,13 +496,23 @@ function handleHand(message) {
 		    closes the current hand. Works only if not in multiplayer mode, where the player is
 		    changed by the server. */
 		    console.log("multiplayer: "+ multiplayer);
-		    if (!multiplayer)
+		    if (!multiplayer) {
 		        console.log("NOT multiplayer!")
 		        if (val != player)
 		            invertPlayers($("#" + card));  // NEVER touch player var directly!
+		    }
             else { // multi player mode:
+                r = 'Color Keeper';
+                if (player_role == 'NK'){r = 'Number Keeper';}
+                $("#text_message span").text("Your playing role is: " + r );
+                console.log("Print player role: " + r);
+
                 console.log("HAND multiplayer, role: "+player_role+ " player turn: "+player+ " val: "+val);
                 if (player_role == val && val != player) {
+                    console.log("Inverting: "+card+ " "+val);
+                    invertPlayers($("#" + card));
+                }
+                if (player_role != val) {
                     console.log("Inverting: "+card+ " "+val);
                     invertPlayers($("#" + card));
                 }
@@ -582,7 +592,7 @@ function handleSetReplay(message) {
 function handleReplay(message) {
     console.log("HandleREPLAY: " + message);
     // Showing the delay for the next expected move
-    $('#replay_delay').replaceWith('<div id="replay_delay"><h5><p>Next move in: ' + message['next_move_at'] + ' seconds</p></h5></div>');
+    $('#text_message span').text('Next move in: ' + message['next_move_at'] + ' seconds');
 
     if (message['hand'] != null) {
         handleHand(message);
