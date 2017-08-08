@@ -507,12 +507,12 @@ function handleHand(message) {
                 $("#text_message span").text("Your playing role is: " + r );
                 console.log("Print player role: " + r);
 
-                console.log("HAND multiplayer, role: "+player_role+ " player turn: "+player+ " val: "+val);
+                console.log("HAND multiplayer, role: " + player_role + " player turn: "+ player +" val: " + val);
                 if (player_role == val && val != player) {
                     console.log("Inverting: "+card+ " "+val);
                     invertPlayers($("#" + card));
                 }
-                if (player_role != val) {
+                if (player_role != val && val != player) {
                     console.log("Inverting: "+card+ " "+val);
                     invertPlayers($("#" + card));
                 }
