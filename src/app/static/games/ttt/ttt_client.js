@@ -385,26 +385,63 @@ function invertPlayers($fromParent) {
 */
 function eventuallyToggleOpponent() {
     console.log('eventually toggle: '+player);
-	if (player == 'NK') {
-		let cardObj = $("#CK").children();
-		let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
-			
-	    console.log('viscard: ' + viscard);
-		if (viscard == 'none' && opponent_covered)
-			cardObj.find('img').toggle();
-		else if (viscard == 'inline' && !opponent_covered)
-			cardObj.find('img').toggle();
-	}
+    // when multi player, the opponent card must be covered!
+    if (multiplayer && player_role=='CK') {
+        let cardObj = $("#CK").children();
+		let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
-	if (player == 'CK' && opponent_covered){
-		let cardObj = $("#NK").children();
-		let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+        if (visibility == 'inline') { // covered amd must be uncovered
+	        cardObj.find('img').toggle();
+	    	// console.log("Multiplayer, opponent "+player_role+ "is covered when playing "+player);
+	    }
+
+	    cardObj = $("#NK").children();
+		visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+
+		if (visibility == 'none') { // uncovered amd must be covered
+	        cardObj.find('img').toggle();
+	    	// console.log("Multiplayer, opponent "+player_role+ "is covered when playing "+player);
+	    }
+    }
+    else if (multiplayer && player_role=='NK'){
+        let cardObj = $("#NK").children();
+		let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+
+        if (visibility == 'inline') { // covered amd must be uncovered
+	        cardObj.find('img').toggle();
+	    	// console.log("Multiplayer, opponent "+player_role+ "is covered when playing "+player);
+	    }
+
+	    cardObj = $("#CK").children();
+		visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+
+		if (visibility == 'none') { // uncovered amd must be covered
+	        cardObj.find('img').toggle();
+	    	// console.log("Multiplayer, opponent "+player_role+ "is covered when playing "+player);
+	    }
+    }
+    else {
+	    if (player == 'NK') {
+		    let cardObj = $("#CK").children();
+		    let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+			
+	        console.log('viscard: ' + viscard);
+		    if (viscard == 'none' && opponent_covered)
+			    cardObj.find('img').toggle();
+		    else if (viscard == 'inline' && !opponent_covered)
+			    cardObj.find('img').toggle();
+	    }
+
+    	if (player == 'CK' && opponent_covered) {
+	    	let cardObj = $("#NK").children();
+		    let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 		
-		console.log('viscard: '+viscard);
-		if (viscard == 'none' && opponent_covered)
-			cardObj.find('img').toggle();
-		else if (viscard == 'inline' && !opponent_covered)
-			cardObj.find('img').toggle();
+		    console.log('viscard: '+viscard);
+		    if (viscard == 'none' && opponent_covered)
+			    cardObj.find('img').toggle();
+		    else if (viscard == 'inline' && !opponent_covered)
+			    cardObj.find('img').toggle();
+	    }
 	}
 }
 
@@ -417,13 +454,13 @@ function setCoveredCards() {
 		jQuery.each(covered, function(card, val) { // inspect each card by ID
 			$("#" + card).css('border', '2px solid #333');  // resets the card-slot border as unmarked
 			if ( (card != 'GC') && (card != 'PL') ) {
-				let cardObj = $("#" + card).children();
-			 	let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+			    let cardObj = $("#" + card).children();
+		 	    let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
 				if (visibility == 'none' && val) // uncovered amd must be covered
-					cardObj.find('img').toggle();
-				else if (visibility == 'inline' && !val) // covered and must be uncovered
-					cardObj.find('img').toggle(); 
+	    			cardObj.find('img').toggle();
+		    	else if (visibility == 'inline' && !val) // covered and must be uncovered
+			    	cardObj.find('img').toggle();
 			}
 		});
 	}
