@@ -10,7 +10,6 @@ from redis import Redis
 from tasks import timeout_task, bot_task, replay_task
 
 user_d = dict()  # maps user names to game configuration session objects
-# clients = dict()  # maps user names to ws connection
 # maps game id to a tuple: game_id -> (task-ref, [(uid, sid), ...] )
 _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
@@ -28,13 +27,13 @@ history_record = {'move': '',
 redis = Redis()  # global Redis DB handler for this module
 
 
-def ttt_player_gen():
+def ttt_player_gen(tags=['CK', 'NK']):
     """
     Super simple generator. It just works for TTT players.
     :return:
     """
-    yield 'CK'
-    yield 'NK'
+    for item in tags:
+        yield item
 
 
 @socket_io.on('replay_ready')
@@ -48,7 +47,6 @@ def replay_ready(message):
     print "session: ", session['game_session']
     replay_task.delay(url='redis://localhost:6379/0', sid=session['game_session'],
                       struct=session['game_cfg'])
-    # session['replay_bot'] = replay_bot
 
 
 @socket_io.on('multiplayer_ready')
@@ -324,7 +322,7 @@ def notify_groups_handler(message):
         if rns:
             emit('abort_multiplayer', {}, room=rns)
 
-    # it should clean the mp_table stored in Redis here!
+            # it should clean the mp_table stored in Redis here!
 
 
 @socket_io.on('connect')
@@ -412,6 +410,8 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         # ends the session on the DB:
         gs = GameSession.query.filter_by(id=sid).first()
         gs.end = datetime.now()
+        gs.score = Move.query.filter_by(sid=sid).filter_by(
+            ~Move.mv.contains('\"move\": \"HAND\"')).count()
         db.session.add(gs)
         db.session.commit()
 
@@ -427,6 +427,8 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                     if sid != s:
                         gs = GameSession.query.filter_by(id=s).first()
                         gs.end = datetime.now()
+                        gs.score = Move.query.filter_by(sid=s).filter_by(
+                            ~Move.mv.contains('\"move\": \"HAND\"')).count()
                         db.session.add(gs)
                         db.session.commit()
 

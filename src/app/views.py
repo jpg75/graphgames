@@ -328,16 +328,24 @@ class StatsView(BaseView):
     @expose('/')
     def index(self):
         from models import MPSession, GameSession, Move, User
-        from sqlalchemy import desc
+        from sqlalchemy import desc, asc
 
         data = []
-        records = GameSession.query.filter(GameSession.end != None).order_by(
-            desc(GameSession.end - GameSession.start)).limit(10).all()
+        # records = GameSession.query.filter(GameSession.end != None).order_by(desc(
+        #    (GameSession.end - GameSession.start))).limit(10).all()
+        records = GameSession.query.filter(GameSession.end != None).order_by().limit(10).all()
+        print records
 
         for item in records:
             user = User.query.get(item.uid)
+
             score = item.moves.filter(~Move.mv.contains('\"move\": \"HAND\"')).count()
             data.append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
-                         'score': score, 'gid': item.type, 'time': item.end - item.start})
+                         'score': score, 'gid': item.type, 'time': (item.end - item.start)})
+
+        records = self.session.query(GameSession, Move.mv.count()).filter(
+            GameSession.end != None).join(Move).filter(~Move.mv.contains('\"move\": \"HAND\"')).all()
+
+        print records
 
         return self.render('admin/stats.html', stats=data)

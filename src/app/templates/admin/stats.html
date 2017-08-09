@@ -22,7 +22,7 @@
                 <td>{{item['sid']}}</td>
                 <td>{{item['gid']}}</td>
                 <td><span class="badge">{{item['score']}}</span></td>
-                <td><span class="badge">{{item['time']}}</span></td>
+                <td><span class="badge">{{item['time'].total_seconds()}}</span></td>
             </tr>
             {% endfor %}
         </tbody>
