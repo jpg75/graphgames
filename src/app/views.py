@@ -327,8 +327,9 @@ class StatsView(BaseView):
     def index(self):
         from models import MPSession, GameSession, User
         from sqlalchemy import desc
+        from itertools import izip
 
-        data = []
+        data = {'solo': [], 'mp': []}
         mp_sids = self.session.query(MPSession.sids).all()
         x = ''
         for item in mp_sids:
@@ -341,19 +342,37 @@ class StatsView(BaseView):
             GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
 
-        # records_mp
-
-        # records2 = self.session.query(GameSession.uid, GameSession.id,
-        #                              GameSession.score, GameSession.type, func.timediff(
-        #         GameSession.end - GameSession.start).label('Time')).filter(GameSession.end != None,
-        #                                                                    GameSession.score !=
-        #                                                                    None).all()
-        # print records2
+        records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score !=
+                                              None, GameSession.id.in_(mp_sids)).order_by(
+            GameSession.score).order_by(desc(
+            GameSession.end - GameSession.start)).limit(10).all()
 
         for item in records:
             user = User.query.get(item.uid)
-            data.append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
-                         'score': item.score, 'gid': item.type, 'time': (item.end -
-                                                                         item.start).total_seconds()})
+            data['solo'].append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
+                                 'score': item.score, 'gid': item.type, 'time': (item.end -
+                                                                                 item.start).total_seconds()})
+        for item in records_mp:
+            user = User.query.get(item.uid)
+            data['mp'].append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
+                               'score': item.score, 'gid': item.type, 'time': (item.end -
+                                                                               item.start).total_seconds()})
+
+        def pairwise(iterable):
+            "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+            a = iter(iterable)
+            return izip(a, a)
+
+        temp = []
+        for x, y in pairwise(data['mp']):
+            temp.append({'user_login': "%s ; %s" % (x['user_login'], y['user_login']),
+                         'uid': "%r %r" % (x['uid'], y['uid']),
+                         'sid': "%r %r" % (x['sid'], y['sid']),
+                         'gid': x['gid'],
+                         'score': x['score'] + y['score'],
+                         'time': max(x['time'], y['time'])
+                         })
+
+        data['mp'] = temp
 
         return self.render('admin/stats.html', stats=data)

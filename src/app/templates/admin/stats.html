@@ -3,7 +3,7 @@
 {% block body %}
 <div class="panel panel-default">
   <!-- Default panel contents -->
-    <div class="panel-heading"><h1>Top 10 player statistics:</h1></div>
+    <div class="panel-heading"><h1>Top 10 player (SOLO) statistics:</h1></div>
 
     <table id="stats_table" class="table table-striped table-bordered" width="100%" cellspacing="0">
         <thead>
@@ -16,7 +16,32 @@
             </tr>
         </thead>
         <tbody>
-            {% for item in stats %}
+            {% for item in stats['solo'] %}
+            <tr>
+                <td>{{item['user_login']}}</td>
+                <td>{{item['sid']}}</td>
+                <td>{{item['gid']}}</td>
+                <td><span class="badge">{{item['score']}}</span></td>
+                <td><span class="badge">{{item['time']}}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="panel-heading"><h1>Top 10 player (Multiplayer) statistics:</h1></div>
+    <table id="stats_mp_table" class="table table-striped table-bordered" width="100%"
+           cellspacing="0">
+        <thead>
+            <tr>
+                <th>Logins</th>
+                <th>Sids</th>
+                <th>Gid</th>
+                <th>Score</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in stats['mp'] %}
             <tr>
                 <td>{{item['user_login']}}</td>
                 <td>{{item['sid']}}</td>
