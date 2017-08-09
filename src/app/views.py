@@ -330,6 +330,7 @@ class StatsView(BaseView):
 
         data = []
         mp_sids = self.session.query(MPSession.sids).all()
+        x = ''
         for item in mp_sids:
             x = ' '.join(item)
 
