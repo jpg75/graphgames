@@ -103,14 +103,16 @@ class GameSession(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     uid = db.Column(db.Integer, db.ForeignKey('users.id'))
     type = db.Column(db.Integer, db.ForeignKey('game_types.id'))
+    score = db.Column(db.Integer)
     start = db.Column(db.DateTime)
     end = db.Column(db.DateTime)
 
     moves = db.relationship('Move', backref='game_session', lazy='dynamic')
 
     def __repr__(self):
-        return 'Session %r, type %r, started: %r, ended: %r' % (self.id, self.type, self.start,
-                                                                self.end)
+        return 'Session %r, type %r, score %r, started: %r, ended: %r' % (self.id, self.type,
+                                                                          self.score, self.start,
+                                                                          self.end)
 
 
 class MPSession(db.Model):

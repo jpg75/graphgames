@@ -410,8 +410,8 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         # ends the session on the DB:
         gs = GameSession.query.filter_by(id=sid).first()
         gs.end = datetime.now()
-        gs.score = Move.query.filter_by(sid=sid).filter_by(
-            ~Move.mv.contains('\"move\": \"HAND\"')).count()
+        gs.score = Move.query.filter(Move.sid == sid,
+                                     ~Move.mv.contains('\"move\": \"HAND\"')).count()
         db.session.add(gs)
         db.session.commit()
 
@@ -427,8 +427,8 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                     if sid != s:
                         gs = GameSession.query.filter_by(id=s).first()
                         gs.end = datetime.now()
-                        gs.score = Move.query.filter_by(sid=s).filter_by(
-                            ~Move.mv.contains('\"move\": \"HAND\"')).count()
+                        gs.score = Move.query.filter(Move.sid == s, ~Move.mv.contains(
+                            '\"move\": \"HAND\"')).count()
                         db.session.add(gs)
                         db.session.commit()
 
