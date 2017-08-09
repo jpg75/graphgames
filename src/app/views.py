@@ -325,13 +325,22 @@ class StatsView(BaseView):
 
     @expose('/')
     def index(self):
-        from models import GameSession, User
+        from models import MPSession, GameSession, User
         from sqlalchemy import desc
 
         data = []
+        mp_sids = self.session.query(MPSession.sids).all()
+        for item in mp_sids:
+            x = ' '.join(item)
+
+        mp_sids = x.split()
+
         records = GameSession.query.filter(GameSession.end != None, GameSession.score !=
-                                           None).order_by(GameSession.score).order_by(desc(
+                                           None, GameSession.id.notin_(mp_sids)).order_by(
+            GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
+
+        # records_mp
 
         # records2 = self.session.query(GameSession.uid, GameSession.id,
         #                              GameSession.score, GameSession.type, func.timediff(
