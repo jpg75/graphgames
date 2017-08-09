@@ -180,8 +180,6 @@ class SessionAdminView(GGBasicAdminView):
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-repeat', '/admin/replay/{row_id}',
                       title='Replay'),
-        # LinkRowAction('glyphicon glyphicon-tree-conifer', '/admin/',
-        #              title='Show graph')
     ]
 
     @action('delete', 'Delete', 'Are you sure to delete the selected rows?')
@@ -327,25 +325,25 @@ class StatsView(BaseView):
 
     @expose('/')
     def index(self):
-        from models import MPSession, GameSession, Move, User
-        from sqlalchemy import desc, asc
+        from models import GameSession, User
+        from sqlalchemy import desc
 
         data = []
-        # records = GameSession.query.filter(GameSession.end != None).order_by(desc(
-        #    (GameSession.end - GameSession.start))).limit(10).all()
-        records = GameSession.query.filter(GameSession.end != None).order_by().limit(10).all()
-        print records
+        records = GameSession.query.filter(GameSession.end != None, GameSession.score !=
+                                           None).order_by(GameSession.score).order_by(desc(
+            GameSession.end - GameSession.start)).limit(10).all()
+
+        # records2 = self.session.query(GameSession.uid, GameSession.id,
+        #                              GameSession.score, GameSession.type, func.timediff(
+        #         GameSession.end - GameSession.start).label('Time')).filter(GameSession.end != None,
+        #                                                                    GameSession.score !=
+        #                                                                    None).all()
+        # print records2
 
         for item in records:
             user = User.query.get(item.uid)
-
-            score = item.moves.filter(~Move.mv.contains('\"move\": \"HAND\"')).count()
             data.append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
-                         'score': score, 'gid': item.type, 'time': (item.end - item.start)})
-
-        records = self.session.query(GameSession, Move.mv.count()).filter(
-            GameSession.end != None).join(Move).filter(~Move.mv.contains('\"move\": \"HAND\"')).all()
-
-        print records
+                         'score': item.score, 'gid': item.type, 'time': (item.end -
+                                                                         item.start).total_seconds()})
 
         return self.render('admin/stats.html', stats=data)
