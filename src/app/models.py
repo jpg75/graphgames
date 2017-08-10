@@ -79,10 +79,20 @@ def init_db():
                                            password=encrypt_password('ccpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
-        db.session.commit()
+            u = user_datastore.create_user(email='gp.jesi@graphgames.org',
+                                           password=encrypt_password('gppasswd'))
+            user_datastore.add_role_to_user(u, default_role)
 
-        if not GameType.query.first():
-            GameType.inject_game_types()
+            # Dummy users for pad experiments:
+            for i in range(1, 11):
+                u = user_datastore.create_user(email='pad' + str(i) + '@graphgames.org',
+                                               password=encrypt_password('pad' + str(i) + 'passwd'))
+                user_datastore.add_role_to_user(u, default_role)
+
+    db.session.commit()
+
+    if not GameType.query.first():
+        GameType.inject_game_types()
 
 
 class Move(db.Model):
