@@ -9,7 +9,21 @@ from flask_admin.form import SecureForm
 from flask_security import current_user
 from datetime import datetime
 from . import aggregate_moves, make_zip, db, csv2string
-from json import loads
+from json import loads, dumps
+from jinja2 import Markup
+from xml.sax.saxutils import escape
+
+
+def pre_format(view, value):
+    return Markup('<div class="pre">{}</div>'.format(escape(value)))
+
+
+def json_format(view, value):
+    return pre_format(view, dumps(value, indent=2))
+
+
+def json_formatter(view, context, model, name):
+    return json_format(view, getattr(model, name, None))
 
 
 class GGFileAdmin(FileAdmin):
@@ -161,6 +175,10 @@ class GameTypeAdminView(GGBasicAdminView):
     create_modal = True
     edit_modal = True
     can_edit = True
+    column_type_formatters = dict()
+    # column_formatters = {
+    #     'params': json_formatter
+    # }
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-play', '/admin/game/{row_id}', title='Play')
     ]
