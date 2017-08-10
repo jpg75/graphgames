@@ -25,6 +25,8 @@ let multiplayer = false;    // support for multi player sessions
 when multiplayer and player_role are different, no card can be operated by the user. */
 let player_role = false;
 
+let clock = null; // count down clock
+
 /*
 * Handlers for network messages over socket-io (web-sockets)
 */
@@ -33,20 +35,7 @@ socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
 socket.on('hand', handleHand);
-socket.on('gameover', function(message) {
-    console.log('Game over.');
-    if (multiplayer)
-        initCardsData(); // updates the score in case of multiplayer last move
-
-    if (message['comment']) {
-        $("<p>Game Over: "+message['comment']+"</p>").alert();
-        // window.alert('Game Over: '+ message['comment']);
-    }
-	else {
-	    $("<p>Game Over: Session ended or timed-out</p>").alert();
-        // window.alert('Game Over: Session ended or timed-out');
-	}
-});
+socket.on('gameover', handleGameOver);
 socket.on('toggle_players', handleTogglePlayers);
 socket.on('replay', handleReplay);
 socket.on('set_replay', handleSetReplay);
@@ -72,6 +61,7 @@ socket.on('abort_multiplayer', function(message) {
 }
 );
 
+
 // Graph visualization:
 let w = 800, h = 480;
 let min_zoom = 0.01;
@@ -80,7 +70,7 @@ let max_zoom = 100;
 let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
 vis.text("The Graph").select("#graph");
 
-let sim = d3.forceSimulation();  // setup a force simulation object
+// let sim = d3.forceSimulation();  // setup a force simulation object
 
 //d3.json("/static/games/ttt/data/TTTg.json", function(error, data) {
 //    if (error) throw error;
@@ -204,6 +194,28 @@ $(document).ready(function () {
 	NK    N   UP   C    CK   T	GC	PL
 	3C   4H   2H   3H   2C   4C	2H	ck
 	*/
+
+	/* count down timer clock */
+    clock = $('.clock').FlipClock(1, {
+		countdown: true,
+		autoStart: false,
+		clockFace: 'MinuteCounter',
+		callbacks: {
+		interval: function() {
+		    time = this.factory.getTime().time;
+		    console.log("time: " + time );
+		    if (time <= 0) {
+		        console.log("Expired time!");
+                handleGameOver({});
+                socket.emit('expired', {});
+		    }
+        },
+        start: function() {
+		    console.log("Start triggered: " + this.factory.getTime().time );
+      	},
+        },
+	});
+
 	window.startPos = window.endPos = {};
 	  
 	initCardsData();
@@ -520,7 +532,10 @@ function handleHand(message) {
 
 	if (!replay) {
         $("<p>New Hand</p>").alert();
-        //window.alert("New hand");
+        if (clock.getTime().time == 1) {
+            clock.setTime(message['timeout']);
+        }
+        clock.start();
 	}
 	$.fx.off = true;  // disable ALL animations
  			
@@ -700,6 +715,25 @@ function handleExternalMove(message) {
 
         handleTogglePlayers();
     }
+}
+
+/**
+* Handle the reception of the gameover  messag efrom the server or is called locally by the
+* expiring clock.
+*/
+function handleGameOver(message) {
+    console.log('Game over.');
+    clock.stop();
+
+    if (multiplayer)
+        initCardsData(); // updates the score in case of multiplayer last move
+
+    if (message['comment']) {
+        $("<p>Game Over: "+message['comment']+"</p>").alert();
+    }
+	else {
+	    $("<p>Game Over: Session ended or timed-out</p>").alert();
+	}
 }
 
 /**
