@@ -24,7 +24,7 @@ let multiplayer = false;    // support for multi player sessions
 /* current player role. used in multi player mode where each client has a fixed player role.
 when multiplayer and player_role are different, no card can be operated by the user. */
 let player_role = false;
-
+let sid = 0;  // session ID of the current game play. The srv communicates it
 let clock = null; // count down clock
 
 /*
@@ -342,8 +342,10 @@ function initCardsData(){
 	// set correct card into goal card GUI:
 	let gcfile = "/static/games/ttt/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
-	// UGLY! You can use Knockout.js for example
-    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: " +player+'</p></h5></div>');
+
+	$('#num_moves span').text(score);
+	$('#player_turn span').text(player);
+	$('#sid span').text(sid);
 }
 
 
@@ -525,6 +527,7 @@ function handleHand(message) {
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
     card_flip = message['card_flip'];
+    sid = message['sid'];
 
 	console.log('handlehand opponent_covered: ' + opponent_covered);
 	console.log(cards);
