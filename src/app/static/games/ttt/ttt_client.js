@@ -728,8 +728,7 @@ function handleGameOver(message) {
     console.log('Game over.');
     clock.stop();
 
-    if (multiplayer)
-        initCardsData(); // updates the score in case of multiplayer last move
+    initCardsData();  // updates the score in both multiplayer and solo games
 
     if (message['comment']) {
         $("<p>Game Over: "+message['comment']+"</p>").alert();
@@ -765,6 +764,6 @@ function sendMove(move, moved_card) {
 /**
 * Update the visual graph model according to the move or hand received.
 */
-function updateVis(move){
+function updateVis(move) {
     ;
 }
