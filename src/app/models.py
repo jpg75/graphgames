@@ -157,6 +157,7 @@ class GameType(db.Model):
             'Small TTT Solo': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
@@ -169,6 +170,7 @@ class GameType(db.Model):
             'Small TTT Solo Uncovered': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
@@ -181,6 +183,7 @@ class GameType(db.Model):
             'AI enabled TTT. The AI bot adopts a rule-based engine.': (
                 {'shoe_file': 'game422-small.txt',
                  'html_file': 'admin/games/ttt-page.html',
+                 'timeout': 900,
                  'replay': False,
                  'enable_bot': True,
                  'enable_multiplayer': True,
@@ -194,6 +197,7 @@ class GameType(db.Model):
             'Small TTT MP': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': True,
                  'enable_bot': False,
@@ -206,6 +210,7 @@ class GameType(db.Model):
             'Small TTT Solo cards unflippable': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
