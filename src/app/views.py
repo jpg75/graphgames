@@ -355,13 +355,13 @@ class StatsView(BaseView):
 
         mp_sids = x.split()
 
-        records = GameSession.query.filter(GameSession.end != None, GameSession.score !=
-                                           None, GameSession.id.notin_(mp_sids)).order_by(
+        records = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
+                                           GameSession.id.notin_(mp_sids)).order_by(
             GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
 
-        records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score !=
-                                              None, GameSession.id.in_(mp_sids)).order_by(
+        records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
+                                              GameSession.id.in_(mp_sids)).order_by(
             GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
 
