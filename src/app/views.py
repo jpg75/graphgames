@@ -349,9 +349,10 @@ class StatsView(BaseView):
 
         data = {'solo': [], 'mp': []}
         mp_sids = self.session.query(MPSession.sids).all()
+
         x = ''
         for item in mp_sids:
-            x = ' '.join(item)
+            x += ' '.join(item) + ' '
 
         mp_sids = x.split()
 
@@ -365,6 +366,8 @@ class StatsView(BaseView):
             GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
 
+        print records_mp
+
         for item in records:
             user = User.query.get(item.uid)
             data['solo'].append({'user_login': user.email, 'uid': item.uid, 'sid': item.id,
@@ -377,7 +380,7 @@ class StatsView(BaseView):
                                                                                item.start).total_seconds()})
 
         def pairwise(iterable):
-            "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+            """s -> (s0, s1), (s2, s3), (s4, s5), ..."""
             a = iter(iterable)
             return izip(a, a)
 
@@ -390,7 +393,6 @@ class StatsView(BaseView):
                          'score': x['score'] + y['score'],
                          'time': max(x['time'], y['time'])
                          })
-
         data['mp'] = temp
 
         return self.render('admin/stats.html', stats=data)
