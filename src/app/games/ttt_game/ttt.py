@@ -432,7 +432,7 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         # db.session.add(gs)
         # db.session.commit()
 
-        _close_game_session()
+        _close_game_session(sid)
 
         if multi_player:
             table = redis.get('mp_table')
