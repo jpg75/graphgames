@@ -355,7 +355,6 @@ class StatsView(BaseView):
             x += ' '.join(item) + ' '
 
         mp_sids = x.split()
-
         records = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
                                            GameSession.id.notin_(mp_sids)).order_by(
             GameSession.score).order_by(desc(
@@ -363,8 +362,6 @@ class StatsView(BaseView):
 
         records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
                                               GameSession.id.in_(mp_sids)).limit(10).all()
-
-        print records_mp
 
         for item in records:
             user = User.query.get(item.uid)
@@ -382,21 +379,22 @@ class StatsView(BaseView):
             a = iter(iterable)
             return izip(a, a)
 
-        temp = {}
+        scores = []
         for x, y in pairwise(data['mp']):
-            temp[x['score'] + y['score']] = {'user_login': "%s ; %s" % (x['user_login'],
-                                                                        y['user_login']),
-                                             'uid': "%r %r" % (x['uid'], y['uid']),
-                                             'sid': "%r %r" % (x['sid'], y['sid']),
-                                             'gid': x['gid'],
-                                             'score': x['score'] + y['score'],
-                                             'time': max(x['time'], y['time'])
-                                             }
+            z = (x['score'] + y['score'], {'user_login': "%s ; %s" % (x['user_login'],
+                                                                      y['user_login']),
+                                           'uid': "%r %r" % (x['uid'], y['uid']),
+                                           'sid': "%r %r" % (x['sid'], y['sid']),
+                                           'gid': x['gid'],
+                                           'score': x['score'] + y['score'],
+                                           'time': max(x['time'], y['time']),
+                                           })
+            scores.append(z)
 
-        scores = temp.keys()
         scores.sort()
         data['mp'][:] = []
+
         for item in scores:
-            data['mp'].append(temp[item])
+            data['mp'].append(item[1])
 
         return self.render('admin/stats.html', stats=data)
