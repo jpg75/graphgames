@@ -420,7 +420,7 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                             'card_flip': gconfig['card_flip'],
                             'covered': gconfig['covered'],
                             'opponent_covered': gconfig['opponent_covered'],
-                            'timeout': timeout}
+                            'timeout': timeout, 'sid': sid}
 
     else:
         print "session ended"
