@@ -362,9 +362,7 @@ class StatsView(BaseView):
             GameSession.end - GameSession.start)).limit(10).all()
 
         records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
-                                              GameSession.id.in_(mp_sids)).order_by(
-            GameSession.score).order_by(desc(
-            GameSession.end - GameSession.start)).limit(10).all()
+                                              GameSession.id.in_(mp_sids)).limit(10).all()
 
         print records_mp
 
@@ -384,15 +382,21 @@ class StatsView(BaseView):
             a = iter(iterable)
             return izip(a, a)
 
-        temp = []
+        temp = {}
         for x, y in pairwise(data['mp']):
-            temp.append({'user_login': "%s ; %s" % (x['user_login'], y['user_login']),
-                         'uid': "%r %r" % (x['uid'], y['uid']),
-                         'sid': "%r %r" % (x['sid'], y['sid']),
-                         'gid': x['gid'],
-                         'score': x['score'] + y['score'],
-                         'time': max(x['time'], y['time'])
-                         })
-        data['mp'] = temp
+            temp[x['score'] + y['score']] = {'user_login': "%s ; %s" % (x['user_login'],
+                                                                        y['user_login']),
+                                             'uid': "%r %r" % (x['uid'], y['uid']),
+                                             'sid': "%r %r" % (x['sid'], y['sid']),
+                                             'gid': x['gid'],
+                                             'score': x['score'] + y['score'],
+                                             'time': max(x['time'], y['time'])
+                                             }
+
+        scores = temp.keys()
+        scores.sort()
+        data['mp'][:] = []
+        for item in scores:
+            data['mp'].append(temp[item])
 
         return self.render('admin/stats.html', stats=data)
