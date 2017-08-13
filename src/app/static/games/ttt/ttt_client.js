@@ -513,8 +513,6 @@ function login() {
 	socket.emit('login', {'username': ''});
 }
 
-// function handleJoin
-
 /**
 * Receive the next game hand in json format.
 * NOTE: replicated code as in initCardsData() : solve it !
@@ -729,6 +727,16 @@ function handleGameOver(message) {
     clock.stop();
 
     initCardsData();  // updates the score in both multiplayer and solo games
+    // disable the chance to move any card
+    $('.card').draggable({
+    	disabled: true,
+    	containment: '#content',
+    	zIndex: 99999,
+    	revert: 'invalid',
+    	start: function(event, ui) {
+    		window.startPos = $(this).offset();
+    	}
+    });
 
     if (message['comment']) {
         $("<p>Game Over: "+message['comment']+"</p>").alert();
