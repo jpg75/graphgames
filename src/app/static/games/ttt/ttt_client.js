@@ -344,7 +344,10 @@ function initCardsData(){
 	$('#GC').find("img").attr('src', gcfile);
 
 	$('#num_moves span').text(score);
-	$('#player_turn span').text(player);
+	if (player=='CK')
+    	$('#player_turn span').text(player + ' (Colore)');
+    else
+        $('#player_turn span').text(player + ' (Numero)');
 	$('#sid span').text(sid);
 }
 
@@ -489,6 +492,9 @@ function setCoveredCards() {
 * card draggables. It does not work when in multi player and player != player_role.
 */
 function passMove(){
+    time = clock.getTime().time;
+    if (time <= 0) return;
+
     if ((!multiplayer) || (multiplayer & player == player_role)) {
         let output_n = $('.card').data('number');
 	    console.log("Data: ", output_n);
@@ -532,7 +538,7 @@ function handleHand(message) {
 	console.log(covered);
 
 	if (!replay) {
-        $("<p>New Hand</p>").alert();
+        $("<p>New Hand<br>(Nuova Mano)</p>").alert();
         if (clock.getTime().time == 1) {
             clock.setTime(message['timeout']);
         }
@@ -624,7 +630,7 @@ function handleSetMultiplayer(message) {
     console.log('Multiplayer mode ENABLED');
     multiplayer = true;
     // window.alert('Ready for a multiplayer session');
-    $("<p>Ready for a multiplayer session</p>").alert();
+    $("<p>Ready for a multiplayer session<br>(Pronto per una sessione multi giocatore)</p>").alert();
 
     socket.emit('multiplayer_ready', {}); // notify the server we are ready
 }
@@ -739,10 +745,10 @@ function handleGameOver(message) {
     });
 
     if (message['comment']) {
-        $("<p>Game Over: "+message['comment']+"</p>").alert();
+        $("<p>Game Over: "+message['comment']+"<br>Gioco Terminato: "+message['comment']+"</p>").alert();
     }
 	else {
-	    $("<p>Game Over: Session ended or timed-out</p>").alert();
+	    $("<p>Game Over: Session ended or timed-out<br>(Gioco Terminato: Sessione finita o scaduta)</p>").alert();
 	}
 }
 
