@@ -30,8 +30,16 @@
 
 <div class="jumbotron">
   <h1>Hello, Stranger!</h1>
-  <p><p>Please <a href="{{ url_for('security.login') }}">Login</a> or <a
+  <!-- <p><p>Please <a href="{{ url_for('security.login') }}">Login</a> or <a
         href="{{ url_for('security.register') }}">Register</a> to play our games.</p>
+        <p>
+        -->
+  <p>Please <a href="{{ url_for('security.login') }}">Login</a> or <a
+        href="">Register</a> to play our games.
+    <p class="text-warning">Sorry, registering has been temporary disabled due to an ongoing
+    experiment. It will be restored on august, 31.</p>
+    </p>
+
   <p>If you want to know more about our platform or need help, please download our
         manual:
         <a href="{{
