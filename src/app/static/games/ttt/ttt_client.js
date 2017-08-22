@@ -26,6 +26,7 @@ when multiplayer and player_role are different, no card can be operated by the u
 let player_role = false;
 let sid = 0;  // session ID of the current game play. The srv communicates it
 let clock = null; // count down clock
+let clock_stop = false;  // set when clock is stopped
 
 /*
 * Handlers for network messages over socket-io (web-sockets)
@@ -213,6 +214,9 @@ $(document).ready(function () {
         start: function() {
 		    console.log("Start triggered: " + this.factory.getTime().time );
       	},
+      	stop: function(){
+      	    clock_stop = true;
+      	}
         },
 	});
 
@@ -491,7 +495,10 @@ function setCoveredCards() {
 * Called when the PASS button is pressed. Invert the players and regenerate the 
 * card draggables. It does not work when in multi player and player != player_role.
 */
-function passMove(){
+function passMove() {
+    if (clock_stop)
+        return;
+
     time = clock.getTime().time;
     if (time <= 0) return;
 
