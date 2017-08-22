@@ -68,8 +68,8 @@ let w = 800, h = 480;
 let min_zoom = 0.01;
 let max_zoom = 100;
 
-let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
-vis.text("The Graph").select("#graph");
+// let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
+// vis.text("The Graph").select("#graph");
 
 // let sim = d3.forceSimulation();  // setup a force simulation object
 
