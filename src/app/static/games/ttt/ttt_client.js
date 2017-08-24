@@ -15,6 +15,8 @@ let card_layout = { 'changed': false,
 							   'GC': '2H', 'PL': 'CK'} };
 
 let player = 'CK', score = 0, goalCard = '2H';
+let hand_num = 0;
+let total_hands_num = 'NA';
 let username = '';
 let covered = null;  // whether or not covering cards
 let card_flip = true;  // whether or not allow flipping cards
@@ -347,6 +349,7 @@ function initCardsData(){
 	let gcfile = "/static/games/ttt/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 
+    $('#hands span').text(hand_num + '/' + total_hands_num);
 	$('#num_moves span').text(score);
 	if (player=='CK')
     	$('#player_turn span').text(player + ' (Colore)');
@@ -539,6 +542,10 @@ function handleHand(message) {
 	opponent_covered = message['opponent_covered'];
     card_flip = message['card_flip'];
     sid = message['sid'];
+    if (message['total_hands_num'])
+        total_hands_num = message['total_hands_num'];
+
+    hand_num += 1;  // set the current hand number
 
 	console.log('handlehand opponent_covered: ' + opponent_covered);
 	console.log(cards);

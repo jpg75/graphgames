@@ -147,8 +147,10 @@ def login(message):
 
     else:
         print "Simple game"
+        tot_hands = len(user_d[current_user.email].content)
         payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
                                  session['game_cfg'], multi_player=False)
+        payload['total_hands_num'] = tot_hands
         emit('hand', payload, room=redis.hget('clients', current_user.email))
 
 
@@ -398,7 +400,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
     """
     next_hand_record = None
     session_config = user_d[user.email]
-    print "in new hand"
     if len(session_config.content) > 0:
         hand = session_config.content.pop(0)
         hand = hand.upper()
@@ -412,7 +413,7 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         db.session.commit()
 
         print "Serving new HAND: %s to user: %d sid: %d" % (hand, user.id, sid)
-        timeout = 900  # default timmeout 15 minutes
+        timeout = 900  # default time-out: 15 minutes
         if gconfig.get('timeout', None):
             timeout = gconfig['timeout']
 
