@@ -170,6 +170,7 @@ class GameTypeAdminView(GGBasicAdminView):
     """
     View for GameTypes. Fields are editable inline.
     """
+    column_list = ['id', 'params', 'info']
     column_editable_list = ['params', 'info']
     can_view_details = False
     create_modal = True
