@@ -18,9 +18,11 @@
   <div class="panel-body">
       <div class="list-group">
           {% for game in games %}
+          <h4>
           <a href="{{ url_for('admin.play_game', game_id=game) }}" class="list-group-item">
-                {{ games[game]}}
+              <b>{{ games[game]}}</b>
           </a>
+          </h4>
           {% endfor %}
         </div>
   </div>
