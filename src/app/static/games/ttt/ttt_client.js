@@ -352,9 +352,9 @@ function initCardsData(){
     $('#hands span').text(hand_num + '/' + total_hands_num);
 	$('#num_moves span').text(score);
 	if (player=='CK')
-    	$('#player_turn span').html(player + ' <b>(COLORE)</b>');
+    	$('#player_turn span').text(player);
     else
-        $('#player_turn span').html(player + ' <b>(NUMERO)</b>');
+        $('#player_turn span').text(player);
 	$('#sid span').text(sid);
 }
 
