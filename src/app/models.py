@@ -79,10 +79,20 @@ def init_db():
                                            password=encrypt_password('ccpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
-        db.session.commit()
+            u = user_datastore.create_user(email='gp.jesi@graphgames.org',
+                                           password=encrypt_password('gppasswd'))
+            user_datastore.add_role_to_user(u, default_role)
 
-        if not GameType.query.first():
-            GameType.inject_game_types()
+            # Dummy users for pad experiments:
+            for i in range(1, 11):
+                u = user_datastore.create_user(email='pad' + str(i) + '@graphgames.org',
+                                               password=encrypt_password('pad' + str(i) + 'passwd'))
+                user_datastore.add_role_to_user(u, default_role)
+
+    db.session.commit()
+
+    if not GameType.query.first():
+        GameType.inject_game_types()
 
 
 class Move(db.Model):
@@ -147,6 +157,7 @@ class GameType(db.Model):
             'Small TTT Solo': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
@@ -159,6 +170,7 @@ class GameType(db.Model):
             'Small TTT Solo Uncovered': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,
@@ -171,6 +183,7 @@ class GameType(db.Model):
             'AI enabled TTT. The AI bot adopts a rule-based engine.': (
                 {'shoe_file': 'game422-small.txt',
                  'html_file': 'admin/games/ttt-page.html',
+                 'timeout': 900,
                  'replay': False,
                  'enable_bot': True,
                  'enable_multiplayer': True,
@@ -184,6 +197,7 @@ class GameType(db.Model):
             'Small TTT MP': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': True,
                  'enable_bot': False,
@@ -196,6 +210,7 @@ class GameType(db.Model):
             'Small TTT Solo cards unflippable': (
                 {'html_file': 'admin/games/ttt-page.html',
                  'shoe_file': 'game422-small.txt',
+                 'timeout': 900,
                  'replay': False,
                  'enable_multiplayer': False,
                  'enable_bot': False,

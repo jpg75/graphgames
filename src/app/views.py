@@ -9,7 +9,21 @@ from flask_admin.form import SecureForm
 from flask_security import current_user
 from datetime import datetime
 from . import aggregate_moves, make_zip, db, csv2string
-from json import loads
+from json import loads, dumps
+from jinja2 import Markup
+from xml.sax.saxutils import escape
+
+
+def pre_format(view, value):
+    return Markup('<div class="pre">{}</div>'.format(escape(value)))
+
+
+def json_format(view, value):
+    return pre_format(view, dumps(value, indent=2))
+
+
+def json_formatter(view, context, model, name):
+    return json_format(view, getattr(model, name, None))
 
 
 class GGFileAdmin(FileAdmin):
@@ -156,11 +170,16 @@ class GameTypeAdminView(GGBasicAdminView):
     """
     View for GameTypes. Fields are editable inline.
     """
+    column_list = ['id', 'params', 'info']
     column_editable_list = ['params', 'info']
     can_view_details = False
     create_modal = True
     edit_modal = True
     can_edit = True
+    column_type_formatters = dict()
+    # column_formatters = {
+    #     'params': json_formatter
+    # }
     column_extra_row_actions = [
         LinkRowAction('glyphicon glyphicon-play', '/admin/game/{row_id}', title='Play')
     ]
@@ -331,21 +350,19 @@ class StatsView(BaseView):
 
         data = {'solo': [], 'mp': []}
         mp_sids = self.session.query(MPSession.sids).all()
+
         x = ''
         for item in mp_sids:
-            x = ' '.join(item)
+            x += ' '.join(item) + ' '
 
         mp_sids = x.split()
-
-        records = GameSession.query.filter(GameSession.end != None, GameSession.score !=
-                                           None, GameSession.id.notin_(mp_sids)).order_by(
+        records = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
+                                           GameSession.id.notin_(mp_sids)).order_by(
             GameSession.score).order_by(desc(
             GameSession.end - GameSession.start)).limit(10).all()
 
-        records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score !=
-                                              None, GameSession.id.in_(mp_sids)).order_by(
-            GameSession.score).order_by(desc(
-            GameSession.end - GameSession.start)).limit(10).all()
+        records_mp = GameSession.query.filter(GameSession.end != None, GameSession.score > 0,
+                                              GameSession.id.in_(mp_sids)).limit(10).all()
 
         for item in records:
             user = User.query.get(item.uid)
@@ -359,20 +376,26 @@ class StatsView(BaseView):
                                                                                item.start).total_seconds()})
 
         def pairwise(iterable):
-            "s -> (s0, s1), (s2, s3), (s4, s5), ..."
+            """s -> (s0, s1), (s2, s3), (s4, s5), ..."""
             a = iter(iterable)
             return izip(a, a)
 
-        temp = []
+        scores = []
         for x, y in pairwise(data['mp']):
-            temp.append({'user_login': "%s ; %s" % (x['user_login'], y['user_login']),
-                         'uid': "%r %r" % (x['uid'], y['uid']),
-                         'sid': "%r %r" % (x['sid'], y['sid']),
-                         'gid': x['gid'],
-                         'score': x['score'] + y['score'],
-                         'time': max(x['time'], y['time'])
-                         })
+            z = (x['score'] + y['score'], {'user_login': "%s ; %s" % (x['user_login'],
+                                                                      y['user_login']),
+                                           'uid': "%r %r" % (x['uid'], y['uid']),
+                                           'sid': "%r %r" % (x['sid'], y['sid']),
+                                           'gid': x['gid'],
+                                           'score': x['score'] + y['score'],
+                                           'time': max(x['time'], y['time']),
+                                           })
+            scores.append(z)
 
-        data['mp'] = temp
+        scores.sort()
+        data['mp'][:] = []
+
+        for item in scores:
+            data['mp'].append(item[1])
 
         return self.render('admin/stats.html', stats=data)

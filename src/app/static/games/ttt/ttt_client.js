@@ -15,6 +15,8 @@ let card_layout = { 'changed': false,
 							   'GC': '2H', 'PL': 'CK'} };
 
 let player = 'CK', score = 0, goalCard = '2H';
+let hand_num = 0;
+let total_hands_num = 'NA';
 let username = '';
 let covered = null;  // whether or not covering cards
 let card_flip = true;  // whether or not allow flipping cards
@@ -24,6 +26,9 @@ let multiplayer = false;    // support for multi player sessions
 /* current player role. used in multi player mode where each client has a fixed player role.
 when multiplayer and player_role are different, no card can be operated by the user. */
 let player_role = false;
+let sid = 0;  // session ID of the current game play. The srv communicates it
+let clock = null; // count down clock
+let clock_stop = false;  // set when clock is stopped
 
 /*
 * Handlers for network messages over socket-io (web-sockets)
@@ -33,20 +38,7 @@ socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
 socket.on('hand', handleHand);
-socket.on('gameover', function(message) {
-    console.log('Game over.');
-    if (multiplayer)
-        initCardsData(); // updates the score in case of multiplayer last move
-
-    if (message['comment']) {
-        $("<p>Game Over: "+message['comment']+"</p>").alert();
-        // window.alert('Game Over: '+ message['comment']);
-    }
-	else {
-	    $("<p>Game Over: Session ended or timed-out</p>").alert();
-        // window.alert('Game Over: Session ended or timed-out');
-	}
-});
+socket.on('gameover', handleGameOver);
 socket.on('toggle_players', handleTogglePlayers);
 socket.on('replay', handleReplay);
 socket.on('set_replay', handleSetReplay);
@@ -72,15 +64,16 @@ socket.on('abort_multiplayer', function(message) {
 }
 );
 
+
 // Graph visualization:
 let w = 800, h = 480;
 let min_zoom = 0.01;
 let max_zoom = 100;
 
-let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
-vis.text("The Graph").select("#graph");
+// let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
+// vis.text("The Graph").select("#graph");
 
-let sim = d3.forceSimulation();  // setup a force simulation object
+// let sim = d3.forceSimulation();  // setup a force simulation object
 
 //d3.json("/static/games/ttt/data/TTTg.json", function(error, data) {
 //    if (error) throw error;
@@ -204,6 +197,31 @@ $(document).ready(function () {
 	NK    N   UP   C    CK   T	GC	PL
 	3C   4H   2H   3H   2C   4C	2H	ck
 	*/
+
+	/* count down timer clock */
+    clock = $('.clock').FlipClock(1, {
+		countdown: true,
+		autoStart: false,
+		clockFace: 'MinuteCounter',
+		callbacks: {
+		interval: function() {
+		    time = this.factory.getTime().time;
+		    console.log("time: " + time );
+		    if (time <= 0) {
+		        console.log("Expired time!");
+                handleGameOver({});
+                socket.emit('expired', {});
+		    }
+        },
+        start: function() {
+		    console.log("Start triggered: " + this.factory.getTime().time );
+      	},
+      	stop: function(){
+      	    clock_stop = true;
+      	}
+        },
+	});
+
 	window.startPos = window.endPos = {};
 	  
 	initCardsData();
@@ -330,8 +348,14 @@ function initCardsData(){
 	// set correct card into goal card GUI:
 	let gcfile = "/static/games/ttt/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
-	// UGLY! You can use Knockout.js for example
-    $('#info').replaceWith('<div id="info"><h5><p>Number of moves: '+score+"</p><p>Current player turn: " +player+'</p></h5></div>');
+
+    $('#hands span').text(hand_num + '/' + total_hands_num);
+	$('#num_moves span').text(score);
+	if (player=='CK')
+    	$('#player_turn span').text(player);
+    else
+        $('#player_turn span').text(player);
+	$('#sid span').text(sid);
 }
 
 
@@ -474,7 +498,13 @@ function setCoveredCards() {
 * Called when the PASS button is pressed. Invert the players and regenerate the 
 * card draggables. It does not work when in multi player and player != player_role.
 */
-function passMove(){
+function passMove() {
+    if (clock_stop)
+        return;
+
+    time = clock.getTime().time;
+    if (time <= 0) return;
+
     if ((!multiplayer) || (multiplayer & player == player_role)) {
         let output_n = $('.card').data('number');
 	    console.log("Data: ", output_n);
@@ -499,8 +529,6 @@ function login() {
 	socket.emit('login', {'username': ''});
 }
 
-// function handleJoin
-
 /**
 * Receive the next game hand in json format.
 * NOTE: replicated code as in initCardsData() : solve it !
@@ -513,14 +541,22 @@ function handleHand(message) {
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
     card_flip = message['card_flip'];
+    sid = message['sid'];
+    if (message['total_hands_num'])
+        total_hands_num = message['total_hands_num'];
+
+    hand_num += 1;  // set the current hand number
 
 	console.log('handlehand opponent_covered: ' + opponent_covered);
 	console.log(cards);
 	console.log(covered);
 
 	if (!replay) {
-        $("<p>New Hand</p>").alert();
-        //window.alert("New hand");
+        $("<p>New Hand<br>(Nuova Mano)</p>").alert();
+        if (clock.getTime().time == 1) {
+            clock.setTime(message['timeout']);
+        }
+        clock.start();
 	}
 	$.fx.off = true;  // disable ALL animations
  			
@@ -608,7 +644,7 @@ function handleSetMultiplayer(message) {
     console.log('Multiplayer mode ENABLED');
     multiplayer = true;
     // window.alert('Ready for a multiplayer session');
-    $("<p>Ready for a multiplayer session</p>").alert();
+    $("<p>Ready for a multiplayer session<br>(Pronto per una sessione multi giocatore)</p>").alert();
 
     socket.emit('multiplayer_ready', {}); // notify the server we are ready
 }
@@ -703,6 +739,34 @@ function handleExternalMove(message) {
 }
 
 /**
+* Handle the reception of the gameover  messag efrom the server or is called locally by the
+* expiring clock.
+*/
+function handleGameOver(message) {
+    console.log('Game over.');
+    clock.stop();
+
+    initCardsData();  // updates the score in both multiplayer and solo games
+    // disable the chance to move any card
+    $('.card').draggable({
+    	disabled: true,
+    	containment: '#content',
+    	zIndex: 99999,
+    	revert: 'invalid',
+    	start: function(event, ui) {
+    		window.startPos = $(this).offset();
+    	}
+    });
+
+    if (message['comment']) {
+        $("<p>Game Over: "+message['comment']+"<br>Gioco Terminato: "+message['comment']+"</p>").alert();
+    }
+	else {
+	    $("<p>Game Over: Session ended or timed-out<br>(Gioco Terminato: Sessione finita o scaduta)</p>").alert();
+	}
+}
+
+/**
 * Send a specific move to the server.
 */
 function sendMove(move, moved_card) {
@@ -728,6 +792,6 @@ function sendMove(move, moved_card) {
 /**
 * Update the visual graph model according to the move or hand received.
 */
-function updateVis(move){
+function updateVis(move) {
     ;
 }

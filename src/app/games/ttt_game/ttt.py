@@ -147,8 +147,10 @@ def login(message):
 
     else:
         print "Simple game"
+        tot_hands = len(user_d[current_user.email].content)
         payload = serve_new_hand(current_user, session['game_session'], session['game_type'],
                                  session['game_cfg'], multi_player=False)
+        payload['total_hands_num'] = tot_hands
         emit('hand', payload, room=redis.hget('clients', current_user.email))
 
 
@@ -325,12 +327,25 @@ def notify_groups_handler(message):
             # it should clean the mp_table stored in Redis here!
 
 
+@socket_io.on('expired')
+@authenticated_only
+def expired_timeout_handler(message):
+    """
+    A client user took to long and the game ended. Here the session is closed since it is
+    considered a valid one, but with poor performance.
+
+    :param message:
+    :return:
+    """
+    print "Received 'exprired' event, closing session: ", session['game_session']
+    _close_game_session(sid=session['game_session'])
+
+
 @socket_io.on('connect')
 def connect():
     print "A client connected: %s" % request.sid
     if current_user.is_authenticated:
         redis.hset('clients', current_user.email, request.sid)
-        # clients[current_user.email] = request.sid
     # print clients
     print redis.hgetall('clients')
 
@@ -385,7 +400,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
     """
     next_hand_record = None
     session_config = user_d[user.email]
-    print "in new hand"
     if len(session_config.content) > 0:
         hand = session_config.content.pop(0)
         hand = hand.upper()
@@ -399,21 +413,27 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
         db.session.commit()
 
         print "Serving new HAND: %s to user: %d sid: %d" % (hand, user.id, sid)
+        timeout = 900  # default time-out: 15 minutes
+        if gconfig.get('timeout', None):
+            timeout = gconfig['timeout']
 
         next_hand_record = {'success': 'ok', 'hand': hand,
                             'card_flip': gconfig['card_flip'],
                             'covered': gconfig['covered'],
-                            'opponent_covered': gconfig['opponent_covered']}
+                            'opponent_covered': gconfig['opponent_covered'],
+                            'timeout': timeout, 'sid': sid}
 
     else:
         print "session ended"
         # ends the session on the DB:
-        gs = GameSession.query.filter_by(id=sid).first()
-        gs.end = datetime.now()
-        gs.score = Move.query.filter(Move.sid == sid,
-                                     ~Move.mv.contains('\"move\": \"HAND\"')).count()
-        db.session.add(gs)
-        db.session.commit()
+        # gs = GameSession.query.filter_by(id=sid).first()
+        # gs.end = datetime.now()
+        # gs.score = Move.query.filter(Move.sid == sid,
+        #                              ~Move.mv.contains('\"move\": \"HAND\"')).count()
+        # db.session.add(gs)
+        # db.session.commit()
+
+        _close_game_session(sid)
 
         if multi_player:
             table = redis.get('mp_table')
@@ -425,12 +445,13 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                 for item in lst:
                     _, s = item
                     if sid != s:
-                        gs = GameSession.query.filter_by(id=s).first()
-                        gs.end = datetime.now()
-                        gs.score = Move.query.filter(Move.sid == s, ~Move.mv.contains(
-                            '\"move\": \"HAND\"')).count()
-                        db.session.add(gs)
-                        db.session.commit()
+                        # gs = GameSession.query.filter_by(id=s).first()
+                        # gs.end = datetime.now()
+                        # gs.score = Move.query.filter(Move.sid == s, ~Move.mv.contains(
+                        #     '\"move\": \"HAND\"')).count()
+                        # db.session.add(gs)
+                        # db.session.commit()
+                        _close_game_session(s)
 
                 if any(table_obj):
                     redis.set('mp_table', dumps(table_obj))
@@ -438,3 +459,18 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                     redis.delete('mp_table')
 
     return next_hand_record
+
+
+def _close_game_session(sid):
+    """
+    Close a game session having the specified sid.
+
+    :param sid:
+    :return:
+    """
+    gs = GameSession.query.filter_by(id=sid).first()
+    gs.end = datetime.now()
+    gs.score = Move.query.filter(Move.sid == sid,
+                                 ~Move.mv.contains('\"move\": \"HAND\"')).count()
+    db.session.add(gs)
+    db.session.commit()
