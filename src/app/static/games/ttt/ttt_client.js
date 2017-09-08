@@ -552,7 +552,7 @@ function handleHand(message) {
 	console.log(covered);
 
 	if (!replay) {
-        $("<p>New Hand<br>(Nuova Mano)</p>").alert();
+        $("<p>New Hand</p>").alert();
         if (clock.getTime().time == 1) {
             clock.setTime(message['timeout']);
         }
