@@ -425,14 +425,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
 
     else:
         print "session ended"
-        # ends the session on the DB:
-        # gs = GameSession.query.filter_by(id=sid).first()
-        # gs.end = datetime.now()
-        # gs.score = Move.query.filter(Move.sid == sid,
-        #                              ~Move.mv.contains('\"move\": \"HAND\"')).count()
-        # db.session.add(gs)
-        # db.session.commit()
-
         _close_game_session(sid)
 
         if multi_player:
@@ -445,12 +437,6 @@ def serve_new_hand(user, sid, gid=1, gconfig=None, multi_player=False):
                 for item in lst:
                     _, s = item
                     if sid != s:
-                        # gs = GameSession.query.filter_by(id=s).first()
-                        # gs.end = datetime.now()
-                        # gs.score = Move.query.filter(Move.sid == s, ~Move.mv.contains(
-                        #     '\"move\": \"HAND\"')).count()
-                        # db.session.add(gs)
-                        # db.session.commit()
                         _close_game_session(s)
 
                 if any(table_obj):
