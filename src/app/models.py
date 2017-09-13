@@ -1,6 +1,6 @@
 from . import db
 from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore
-from flask_security.utils import encrypt_password
+from flask_security.utils import hash_password
 from flask import current_app
 from datetime import datetime
 from json import dumps
@@ -68,25 +68,26 @@ def init_db():
 
         if not User.query.first():
             u = user_datastore.create_user(email='admin@graphgames.org',
-                                           password=encrypt_password('adminpw'))
+                                           password=hash_password('adminpw'))
             user_datastore.add_role_to_user(u, adm_role)
 
             u = user_datastore.create_user(email='bot@graphgames.org',
-                                           password=encrypt_password('botpasswd'))
+                                           password=hash_password('botpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
             u = user_datastore.create_user(email='ccalluso@graphgames.org',
-                                           password=encrypt_password('ccpasswd'))
+                                           password=hash_password('ccpasswd'))
             user_datastore.add_role_to_user(u, adm_role)
 
             u = user_datastore.create_user(email='gp.jesi@graphgames.org',
-                                           password=encrypt_password('gppasswd'))
+                                           password=hash_password('gppasswd'))
             user_datastore.add_role_to_user(u, default_role)
 
             # Dummy users for pad experiments:
             for i in range(1, 11):
                 u = user_datastore.create_user(email='pad' + str(i) + '@graphgames.org',
-                                               password=encrypt_password('pad' + str(i) + 'passwd'))
+                                               password=hash_password('pad' + str(i) +
+                                                                          'passwd'))
                 user_datastore.add_role_to_user(u, default_role)
 
     db.session.commit()
