@@ -1,10 +1,15 @@
 from collections import deque
 from itertools import permutations
-from json import dumps
+# from json import dumps
 from copy import deepcopy
 from sys import maxsize
 
 __author__ = 'Gian Paolo Jesi'
+
+"""
+This module provides a game generator class that generate all possible game states starting from
+a structured definition of the game itself.
+"""
 
 g_struct = {
     'status_keys': ['CK', 'NK', 'U', 'C', 'N', 'T', 'PL'],
@@ -72,7 +77,7 @@ g_struct = {
 }
 
 
-def _process_lambda(rule, state, struct):
+def _process_lambda(rule, state):
     f = eval(rule)
     new_state = f(*state)
     return new_state
@@ -116,7 +121,7 @@ def _enrich_status(status, game_struct):
     :param game_struct: game structure, a dictionary defining the game in abstract terms.
     :return:
     """
-    # prepare an list with empty dictionaries:
+    # prepare a list with empty dictionaries:
     d = []
     for key_value in status:
         elem = dict()

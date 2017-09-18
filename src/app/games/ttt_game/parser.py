@@ -40,7 +40,15 @@ class RuleParser(object):
         """Calculate the rule match and return the rule to apply.
         The rule to apply is selected according to the rate scored.
         If multiple rules scored the same, then a rule is selected at random.
-        :type history_record_keys: set object
+
+        :param hand: card symbol (str) in hand position
+        :param up: card symbol (str)= in up position
+        :param target: card symbol /str) in target position
+        :param ck_knowledge: list of dictionaries of ck knowledge. Each entry represents t=x-i
+        step backward
+        :param nk_knowledge: list of dictionaries of nk knowledge. Each entry represents t=x-i
+        step backward
+        :param auto_player: turn assigned to the automatic player (default 'nk')
         """
         history_record_keys = ['move', 'in_hand', 'U', 'T']
 
