@@ -72,7 +72,9 @@ def aggregate_moves(moves, sids):
     unique_hands = []
     current_hand = None
     sid_data = dict([(x, {}) for x in sids])  # maps <sid> -> { <hand> -> [seq] }
-    FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
+    # Required for old nemik format: without goal card and player info
+    # FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'GC' and x != 'PL']
+    FILE_ORDER = [x for x in SHOE_FILE_ORDER if x != 'PL']
 
     # NOTE: moves must be sorted by sid before being here!
     for move in moves:
