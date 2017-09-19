@@ -93,6 +93,19 @@ class pyNemik(object):
                 tcardseq = self.deck['T']
 
                 for c in mseq:
+                    if self.deck['CK'] == self.deck['GC'] and \
+                            (self.deck['NK'][1] == self.deck['GC'][1] and
+                                     self.deck['NK'][0] == self.deck['T'][0]):
+                        print "NNK"
+
+                    elif self.deck['NK'] == self.deck['GC'] and \
+                            (self.deck['CK'][0] == self.deck['GC'][0] and
+                                     self.deck['CK'][1] == self.deck['T'][1]):
+                        print "NKK"
+
+                    else:
+                        print "NA"
+
                     if self.verbose:
                         print "playing %s" % c
                         print "deck before: %s" % self.deck
@@ -105,7 +118,24 @@ class pyNemik(object):
 
                 data[hand].append(tcardseq)
 
+            data[hand] = [data[hand], [self.detect_strategy(item) for item in data[hand]]]
+
         self.classification = data
+
+    def detect_strategy(self, cardseq):
+        """
+        Check for specific patterns in order to guess the adopted strategy.
+
+        :param cardseq: string sequence of card symbols separated by spaces.
+        :return: a string representing the strategy (eg.: 442, 422, NNK,..)
+        """
+        if cardseq.find('4C 4H 2H') != -1:
+            return '442'
+
+        if cardseq.find('4C 2C 2H') != -1:
+            return '422'
+
+        return 'NA'
 
     def show_classification(self):
         for item in self.ordered_hands:
