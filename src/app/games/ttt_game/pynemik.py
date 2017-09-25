@@ -24,7 +24,7 @@ class pyNemik(object):
         self.nk_rules = self.load_rules(nk_rules) if nk_rules is None else None
         self.iterations = iterations
         self.gui = gui
-        self.deck = dict([(x, '') for x in _SHOE_FILE_ORDER])
+        self.board = dict([(x, '') for x in _SHOE_FILE_ORDER])  # virtual board
         self.classification = None
         self.verbose = verbose
 
@@ -70,7 +70,7 @@ class pyNemik(object):
 
         hand_data = dict(zip(_SHOE_FILE_ORDER, hand))
         for item in hand_data:
-            self.deck[item] = hand_data[item]
+            self.board[item] = hand_data[item]
 
     def classify(self):
         """
@@ -86,65 +86,92 @@ class pyNemik(object):
             if self.verbose: print "hand: %s" % hand
             data[hand] = []
             # classify this hand for every player:
-            s_detected = None
+
             for mseq in self.moves[hand]:
                 if self.verbose: print "sequence: %s" % mseq
                 self.init_deck(hand, turn=hand_turn)
-                tcardseq = self.deck['T']
+                tcardseq = self.board['T']
+                s_detected = None
+                sx_dx_detect = None  # generic categorization
 
                 for c in mseq:
+                    if not s_detected:
+                        s_detected = self.detect_strategy(tcardseq)
+
                     if self.verbose:
                         print "playing %s" % c
-                        print "deck before: %s" % self.deck
+                        print "deck before: %s" % self.board
+
+                    if sx_dx_detect is None and c == 'T':
+                        sx_dx_detect = self.detect_sxdx_strategy()
+
                     self.play_move(c)
                     if self.verbose:
-                        print "deck after: %s" % self.deck
+                        print "deck after: %s" % self.board
 
                     if c == 'T':
-                        tcardseq += ' ' + self.deck['T']
+                        tcardseq += ' ' + self.board['T']
 
                     if not s_detected:
                         s_detected = self.detect_strategy(tcardseq)
-                        print s_detected
 
-                data[hand].append((tcardseq, s_detected))
+                data[hand].append((tcardseq, s_detected, sx_dx_detect))
 
             data[hand] = [[x[0] for x in data[hand]], [x[1] if x[1] is not None else 'NA' for x in
-                                                       data[hand]]]
+                                                       data[hand]], [x[2] if x[2] is not None
+                                                                     else 'NA' for x in data[hand]
+                                                                     ]]
 
             self.classification = data
+
+    def detect_sxdx_strategy(self):
+        """
+        Check if the final move come from left ('SX') or right ('DX'). It is the highest level
+        classification.
+
+        :return: 'SX' or 'DX' string. None otherwise
+        """
+        if self.board['PL'] == 'CK' and self.board['CK'] == self.board['GC']:
+            return 'SX'
+
+        if self.board['PL'] == 'NK' and self.board['NK'] == self.board['GC']:
+            return 'DX'
+
+        return None
 
     def detect_strategy(self, cardseq):
         """
         Check for specific patterns in order to guess the adopted strategy.
 
         :param cardseq: string sequence of card symbols separated by spaces.
-        :return: a string representing the strategy (eg.: 442, 422, NNK,..). When result is not
-        None, a strategy has been detected
+        :return: string representing a specific strategy (eg.: 442, 422, NNK,..). When result
+        is not None a strategy has been detected
         """
-        print self.deck['GC']
-        if self.deck['GC'] == '2H':
+        if self.board['GC'] == '2H':
             if cardseq.find('4C 4H 2H') != -1:
                 return '442'
 
             if cardseq.find('4C 2C 2H') != -1:
                 return '422'
         else:
-            if self.deck['CK'] == self.deck['GC'] and \
-                    (self.deck['NK'][1] == self.deck['GC'][1] and
-                             self.deck['NK'][0] == self.deck['T'][0]):
+            if self.board['CK'] == self.board['GC'] and \
+                    (self.board['NK'][1] == self.board['GC'][1] and
+                             self.board['NK'][0] == self.board['T'][0]):
                 return "NNK"
 
-            if self.deck['NK'] == self.deck['GC'] and \
-                    (self.deck['CK'][0] == self.deck['GC'][0] and
-                             self.deck['CK'][1] == self.deck['T'][1]):
+            if self.board['NK'] == self.board['GC'] and \
+                    (self.board['CK'][0] == self.board['GC'][0] and
+                             self.board['CK'][1] == self.board['T'][1]):
                 return "NKK"
 
         return None
 
-    def show_classification(self):
-        for item in self.ordered_hands:
-            print "%s -> %r" % (item, self.classification[item])
+    def show_classification(self, format='text'):
+        if format == 'text':
+            for item in self.ordered_hands:
+                print "%s -> %r" % (item, self.classification[item])
+        elif format == 'json':
+            data = self.ordered_hands
 
     def play_move(self, move):
         """
@@ -215,7 +242,7 @@ class pyNemik(object):
                    'T': move_t
                    }
 
-        options[move](self.deck)  # play
+        options[move](self.board)  # play
 
 
 def main(parser):
@@ -264,3 +291,6 @@ if __name__ == '__main__':
     p.add_argument("-v", action="store_true", dest="verbose", help="toggle verbosity")
 
     main(p)
+
+
+# dx o sx?
