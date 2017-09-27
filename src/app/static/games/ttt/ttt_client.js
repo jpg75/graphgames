@@ -54,12 +54,12 @@ socket.on('set_player_role', handleSetPlayerRole);
 socket.on('abort_multiplayer', function(message) {
     console.log('Multiplayer aborted.')
     if (message['comment']) {
-        $("<p>Multiplayer session aborted: "+ message['comment']+"</p>").alert();
-        // window.alert('Multiplayer session aborted: '+ message['comment']);
+        //$("<p>Multiplayer session aborted: "+ message['comment']+"</p>").alert();
+        window.alert('Multiplayer session aborted: '+ message['comment']);
     }
 	else {
-	    $("<p>Sorry, multiplayer session failed or timed out: please try again</p>").alert();
-	    // window.alert('Sorry, multiplayer session failed or timed out: please try again.');
+	    // $("<p>Sorry, multiplayer session failed or timed out: please try again</p>").alert();
+	    window.alert('Sorry, multiplayer session failed or timed out: please try again.');
 	}
 }
 );
@@ -552,7 +552,8 @@ function handleHand(message) {
 	console.log(covered);
 
 	if (!replay) {
-        $("<p>New Hand</p>").alert();
+        window.alert('New Hand');
+        // $("<p>New Hand</p>").alert();
         if (clock.getTime().time == 1) {
             clock.setTime(message['timeout']);
         }
@@ -643,8 +644,10 @@ function handleTogglePlayers() {
 function handleSetMultiplayer(message) {
     console.log('Multiplayer mode ENABLED');
     multiplayer = true;
-    // window.alert('Ready for a multiplayer session');
-    $("<p>Ready for a multiplayer session<br>(Pronto per una sessione multi giocatore)</p>").alert();
+    window.alert('Ready for a multiplayer session');
+
+    // $("<p>Ready for a multiplayer session<br>(Pronto per una sessione multi giocatore)</p>")
+    //.alert();
 
     socket.emit('multiplayer_ready', {}); // notify the server we are ready
 }
@@ -655,8 +658,8 @@ function handleSetMultiplayer(message) {
 function handleSetReplay(message) {
     console.log('Replay mode ENABLED');
     replay = true;
-    // window.alert('Ready to replay session');
-    $("<p>Ready to replay session</p>").alert();
+     window.alert('Ready to replay session');
+    // $("<p>Ready to replay session</p>").alert();
     socket.emit('replay_ready', {}); // notify the server we are ready
 }
 
@@ -725,7 +728,7 @@ function handleExternalMove(message) {
         let pl_card = $('#' + player + ' > .card');
         let move_card = $('#' + mv + ' > .card');
         // card name, es: 2H
-            let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         let move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         console.log("player card key: "+pl_key);
         console.log("to be moved card key: "+move_key);
@@ -759,10 +762,14 @@ function handleGameOver(message) {
     });
 
     if (message['comment']) {
-        $("<p>Game Over: "+message['comment']+"<br>Gioco Terminato: "+message['comment']+"</p>").alert();
+        window.alert('Game Over'+ message['comment']);
+        // $("<p>Game Over: "+message['comment']+"<br>Gioco Terminato: "+message['comment']+"</p>")
+        //.alert();
     }
 	else {
-	    $("<p>Game Over: Session ended or timed-out<br>(Gioco Terminato: Sessione finita o scaduta)</p>").alert();
+	    window.alert('Game Over: Session ended or timed-out');
+	    // $("<p>Game Over: Session ended or timed-out<br>(Gioco Terminato: Sessione finita o
+	    //scaduta)</p>").alert();
 	}
 }
 
