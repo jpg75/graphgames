@@ -16,10 +16,11 @@ _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 
 class pyNemik(object):
-    def __init__(self, moves, ck_rules=None, nk_rules=None, iterations=10, gui=False,
+    def __init__(self, moves_file=None, ck_rules=None, nk_rules=None, iterations=10, gui=False,
                  verbose=False):
         self.ordered_hands = []  # list of hands in order (as they appear in the file
-        self.moves = self.load_moves(moves)  # dictionary of lists
+        # dictionary of lists: hand -> [mv1, mv2,..]
+        self.moves = self.load_moves(moves_file) if moves_file is not None else self.moves = dict()
         self.ck_rules = self.load_rules(ck_rules) if ck_rules is None else None
         self.nk_rules = self.load_rules(nk_rules) if nk_rules is None else None
         self.iterations = iterations
@@ -254,7 +255,7 @@ def main(parser):
         print "Nemik running..."
 
         if not args['gui']:  # no GUI
-            nemik = pyNemik(moves=args['moves'],
+            nemik = pyNemik(moves_file=args['moves'],
                             ck_rules=args['ck_rules'],
                             nk_rules=args['nk_rules'],
                             iterations=args['iterations'],
