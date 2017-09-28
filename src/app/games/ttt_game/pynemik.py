@@ -60,7 +60,7 @@ class pyNemik(object):
         """
         hand = hand.split()
         l = len(hand)
-        if l < 6 or l > 7:
+        if l < 6 or l > 8:
             print "Error: %d elements in hand string. Must be: >=6 x <=8."
             return
 
