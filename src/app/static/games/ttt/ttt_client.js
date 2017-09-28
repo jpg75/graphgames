@@ -10,30 +10,30 @@ const covered_cards = {"U": false, "C": true, "N": true,
 						"T": false, "CK": false, "NK": false};
 const allowed_moving_zones = ["U", "T", "C", "N"];
 
-let card_layout = { 'changed': false, 
+var card_layout = { 'changed': false, 
 					'state' : {'NK': '2C', 'N': '3C', 'U': '4C', 'C': '2H', 'CK': '3H', 'T': '4H', 
 							   'GC': '2H', 'PL': 'CK'} };
 
-let player = 'CK', score = 0, goalCard = '2H';
-let hand_num = 0;
-let total_hands_num = 'NA';
-let username = '';
-let covered = null;  // whether or not covering cards
-let card_flip = true;  // whether or not allow flipping cards
-let opponent_covered = false;  // force the opponent card always covered
-let replay = false;  // support for replay of game sessions
-let multiplayer = false;    // support for multi player sessions
+var player = 'CK', score = 0, goalCard = '2H';
+var hand_num = 0;
+var total_hands_num = 'NA';
+var username = '';
+var covered = null;  // whether or not covering cards
+var card_flip = true;  // whether or not allow flipping cards
+var opponent_covered = false;  // force the opponent card always covered
+var replay = false;  // support for replay of game sessions
+var multiplayer = false;    // support for multi player sessions
 /* current player role. used in multi player mode where each client has a fixed player role.
 when multiplayer and player_role are different, no card can be operated by the user. */
-let player_role = false;
-let sid = 0;  // session ID of the current game play. The srv communicates it
-let clock = null; // count down clock
-let clock_stop = false;  // set when clock is stopped
+var player_role = false;
+var sid = 0;  // session ID of the current game play. The srv communicates it
+var clock = null; // count down clock
+var clock_stop = false;  // set when clock is stopped
 
 /*
 * Handlers for network messages over socket-io (web-sockets)
 */
-let socket = io.connect('http://' + document.domain + ':' + location.port);
+var socket = io.connect('http://' + document.domain + ':' + location.port);
 socket.on('connect', function() {
 	console.log('Connected to server @ '+document.domain +':'+location.port);
 });
@@ -66,14 +66,14 @@ socket.on('abort_multiplayer', function(message) {
 
 
 // Graph visualization:
-let w = 800, h = 480;
-let min_zoom = 0.01;
-let max_zoom = 100;
+var w = 800, h = 480;
+var min_zoom = 0.01;
+var max_zoom = 100;
 
-// let vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
+// var vis = d3.select("#graph").append("svg").attr("width", w).attr("height", h)
 // vis.text("The Graph").select("#graph");
 
-// let sim = d3.forceSimulation();  // setup a force simulation object
+// var sim = d3.forceSimulation();  // setup a force simulation object
 
 //d3.json("/static/games/ttt/data/TTTg.json", function(error, data) {
 //    if (error) throw error;
@@ -89,12 +89,12 @@ let max_zoom = 100;
 //
 //    // Create the link force
 //    // We need the id accessor to use named sources and targets
-//    let link_force = d3.forceLink(data["links"])
+//    var link_force = d3.forceLink(data["links"])
 //                        .id(function(d) { return d.index; });
 //    sim.force("links", link_force);
 //
 //    // prepare the tip
-//    let tip = d3.tip()
+//    var tip = d3.tip()
 //        .attr('class', 'd3-tip')
 //        .offset([-10, 0])
 //        .html(function(d) {
@@ -104,7 +104,7 @@ let max_zoom = 100;
 //            "</span>";
 //        })
 //
-//    let zoom_handler = d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
+//    var zoom_handler = d3.zoom().scaleExtent([min_zoom, max_zoom]).on("zoom", zoom_actions);
 //
 //    vis.call(tip);
 //    vis.call(zoom_handler);
@@ -113,10 +113,10 @@ let max_zoom = 100;
 //     * corresponds to the view part of the pattern. By having a "g" main container for node and
 //     * inks we can easily apply transformations to the whole graph.
 //     */
-//    let g = vis.append("g").attr("class", "everything");
+//    var g = vis.append("g").attr("class", "everything");
 //
 //    /* physically draw links */
-//    let link = g.append("g").
+//    var link = g.append("g").
 //        attr("class", "links")
 //        .selectAll("line")
 //        .data(data["links"])
@@ -124,7 +124,7 @@ let max_zoom = 100;
 //        .attr("stroke-width", 2);
 //
 //    /* physically draw nodes */
-//    let node = g.append("g")
+//    var node = g.append("g")
 //        .attr("class", "nodes")
 //        .selectAll("circle")
 //        .data(data["nodes"])
@@ -142,7 +142,7 @@ let max_zoom = 100;
 //    });
 //    sim.on("tick", tickActions);
 //
-//    let drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
+//    var drag_handler = d3.drag().on("start", drag_start).on("drag", drag_drag).on("end", drag_end);
 //
 //    function drag_start(d) {
 //        if (!d3.event.active) sim.alphaTarget(0.05).restart();
@@ -232,14 +232,14 @@ $(document).ready(function () {
     	hoverClass: 'hoverClass',
         
         drop: function(event, ui) {
-        	let $from = $(ui.draggable),
+        	var $from = $(ui.draggable),
             	$fromParent = $from.parent(),
             	$to = $(this).children(),
               	$toParent = $(this);
 
 			legal_move = checkMove($from, $fromParent, $to, $toParent);
 			// console.log("Is legal: "+ legal_move);
-			let moved_card = $from.data('card');
+			var moved_card = $from.data('card');
 			
 			if (!legal_move) {
 				// restore the moved card to its previous position:
@@ -312,7 +312,7 @@ function makeDraggable() {
 
 	// Set card bindings to flip behavior:
 	$('.card').off('dblclick');
-	$('.card').off('doubletap');
+	$('.card').off('doubvarap');
 	$('.card').on({
 	        dblclick: function() {
 	                    console.log('val: '+ card_flip);
@@ -321,7 +321,7 @@ function makeDraggable() {
 						    $(this).find('img').toggle();
 						}
 					},
-			doubletap:	function() {
+			doubvarap:	function() {
 						if (card_flip) {
 						    console.log('flipping card: '+ $(this).data('card'));
     						$(this).find('img').toggle();
@@ -339,14 +339,14 @@ function makeDraggable() {
 */ 
 function initCardsData(){
 	$('.card').each(function(index, el) {
-	    let key = $(this).find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+	    var key = $(this).find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
 		$(this).data('color', cards_colors[key] );
 		$(this).data('number', key.charAt(0) );
 		$(this).data('card', key );
 	});
 
 	// set correct card into goal card GUI:
-	let gcfile = "/static/games/ttt/" + goalCard + ".png";
+	var gcfile = "/static/games/ttt/" + goalCard + ".png";
 	$('#GC').find("img").attr('src', gcfile);
 
     $('#hands span').text(hand_num + '/' + total_hands_num);
@@ -363,16 +363,16 @@ function initCardsData(){
 * Check if a move is legal or not.
 */
 function checkMove($from, $fromP, $to, $toP){
-	let dest_slot = $toP.attr('id');
+	var dest_slot = $toP.attr('id');
 	// console.log('id of destination: ' + dest_slot);
  
-	let index = allowed_moving_zones.lastIndexOf(dest_slot);
+	var index = allowed_moving_zones.lastIndexOf(dest_slot);
 	if (index == -1) return false;
 
 	if (dest_slot == 'T') {
-		let $tcard = $('#T > .card');
-		let color_t = $tcard.data('color');
-		let number_t = $tcard.data('number');
+		var $tcard = $('#T > .card');
+		var color_t = $tcard.data('color');
+		var number_t = $tcard.data('number');
 
 		console.log('player: '+player+' , pcolor: ' + $from.data('color') + ' - Tcolor: '+ color_t +
 			' , pnumber: ' + $from.data('number') + ' - Tnumber: ' + number_t );
@@ -411,8 +411,8 @@ function eventuallyToggleOpponent() {
     console.log('eventually toggle: '+player);
     // when multi player, the opponent card must be covered!
     if (multiplayer && player_role=='CK') {
-        let cardObj = $("#CK").children();
-		let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+        var cardObj = $("#CK").children();
+		var visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
         if (visibility == 'inline') { // covered amd must be uncovered
 	        cardObj.find('img').toggle();
@@ -428,8 +428,8 @@ function eventuallyToggleOpponent() {
 	    }
     }
     else if (multiplayer && player_role=='NK'){
-        let cardObj = $("#NK").children();
-		let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+        var cardObj = $("#NK").children();
+		var visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
         if (visibility == 'inline') { // covered amd must be uncovered
 	        cardObj.find('img').toggle();
@@ -446,8 +446,8 @@ function eventuallyToggleOpponent() {
     }
     else {
 	    if (player == 'NK') {
-		    let cardObj = $("#CK").children();
-		    let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+		    var cardObj = $("#CK").children();
+		    var viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 			
 	        console.log('viscard: ' + viscard);
 		    if (viscard == 'none' && opponent_covered)
@@ -457,8 +457,8 @@ function eventuallyToggleOpponent() {
 	    }
 
     	if (player == 'CK' && opponent_covered) {
-	    	let cardObj = $("#NK").children();
-		    let viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+	    	var cardObj = $("#NK").children();
+		    var viscard = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 		
 		    console.log('viscard: '+viscard);
 		    if (viscard == 'none' && opponent_covered)
@@ -478,8 +478,8 @@ function setCoveredCards() {
 		jQuery.each(covered, function(card, val) { // inspect each card by ID
 			$("#" + card).css('border', '2px solid #333');  // resets the card-slot border as unmarked
 			if ( (card != 'GC') && (card != 'PL') ) {
-			    let cardObj = $("#" + card).children();
-		 	    let visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
+			    var cardObj = $("#" + card).children();
+		 	    var visibility = cardObj.find("[src='/static/games/ttt/card_back.png']").css('display');
 
 				if (visibility == 'none' && val) // uncovered amd must be covered
 	    			cardObj.find('img').toggle();
@@ -506,7 +506,7 @@ function passMove() {
 //    if (time <= 0) return;
 
     if ((!multiplayer) || (multiplayer & player == player_role)) {
-        let output_n = $('.card').data('number');
+        var output_n = $('.card').data('number');
 	    console.log("Data: ", output_n);
         // Send move before inverting players
         sendMove('P', '');
@@ -536,7 +536,7 @@ function login() {
 function handleHand(message) {
 	console.log('Received HAND: '+ message);
 
-	let cards = message['hand'];
+	var cards = message['hand'];
 	// collect global data from message:
 	covered = message['covered'];
 	opponent_covered = message['opponent_covered'];
@@ -692,15 +692,15 @@ function handleMove(message) {
     }
     else {
         console.log("Replaying move: " + message['move']);
-        let mv = message['move']['move'];
+        var mv = message['move']['move'];
         console.log("mv: " + mv);
         // swap the current player card with the one in the position indicated by the move
         // all over the html document
-        let pl_card = $('#' + player + ' > .card');
-        let move_card = $('#' + mv + ' > .card');
+        var pl_card = $('#' + player + ' > .card');
+        var move_card = $('#' + mv + ' > .card');
         // card name, es: 2H
-        let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
-        let move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        var pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        var move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         console.log("player card key: "+pl_key);
         console.log("to be moved card key: "+move_key);
 
@@ -722,14 +722,14 @@ function handleExternalMove(message) {
         handleTogglePlayers();
     }
     else {
-        let mv = message['move'];
+        var mv = message['move'];
         // swap the current player card with the one in the position indicated by the move
         // all over the html document
-        let pl_card = $('#' + player + ' > .card');
-        let move_card = $('#' + mv + ' > .card');
+        var pl_card = $('#' + player + ' > .card');
+        var move_card = $('#' + mv + ' > .card');
         // card name, es: 2H
-        let pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
-        let move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        var pl_key = pl_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
+        var move_key = move_card.find("[src!='/static/games/ttt/card_back.png']").attr('src').slice(-6, -4);
         console.log("player card key: "+pl_key);
         console.log("to be moved card key: "+move_key);
 
@@ -777,7 +777,7 @@ function handleGameOver(message) {
 * Send a specific move to the server.
 */
 function sendMove(move, moved_card) {
-	let d = new Date();
+	var d = new Date();
 	console.log('sending: '+player+ ' move: '+move);
 	socket.emit('move', {
 	    'player': player,
