@@ -199,28 +199,28 @@ $(document).ready(function () {
 	*/
 
 	/* count down timer clock */
-    clock = $('.clock').FlipClock(1, {
-		countdown: true,
-		autoStart: false,
-		clockFace: 'MinuteCounter',
-		callbacks: {
-		interval: function() {
-		    time = this.factory.getTime().time;
-		    console.log("time: " + time );
-		    if (time <= 0) {
-		        console.log("Expired time!");
-                handleGameOver({});
-                socket.emit('expired', {});
-		    }
-        },
-        start: function() {
-		    console.log("Start triggered: " + this.factory.getTime().time );
-      	},
-      	stop: function(){
-      	    clock_stop = true;
-      	}
-        },
-	});
+//    clock = $('.clock').FlipClock(1, {
+//		countdown: true,
+//		autoStart: false,
+//		clockFace: 'MinuteCounter',
+//		callbacks: {
+//		interval: function() {
+//		    time = this.factory.getTime().time;
+//		    console.log("time: " + time );
+//		    if (time <= 0) {
+//		        console.log("Expired time!");
+//                handleGameOver({});
+//                socket.emit('expired', {});
+//		    }
+//        },
+//        start: function() {
+//		    console.log("Start triggered: " + this.factory.getTime().time );
+//      	},
+//      	stop: function(){
+//      	    clock_stop = true;
+//      	}
+//        },
+//	});
 
 	window.startPos = window.endPos = {};
 	  
@@ -499,11 +499,11 @@ function setCoveredCards() {
 * card draggables. It does not work when in multi player and player != player_role.
 */
 function passMove() {
-    if (clock_stop)
-        return;
-
-    time = clock.getTime().time;
-    if (time <= 0) return;
+//    if (clock_stop)
+//        return;
+//
+//    time = clock.getTime().time;
+//    if (time <= 0) return;
 
     if ((!multiplayer) || (multiplayer & player == player_role)) {
         let output_n = $('.card').data('number');
@@ -554,10 +554,10 @@ function handleHand(message) {
 	if (!replay) {
         window.alert('New Hand');
         // $("<p>New Hand</p>").alert();
-        if (clock.getTime().time == 1) {
-            clock.setTime(message['timeout']);
-        }
-        clock.start();
+//        if (clock.getTime().time == 1) {
+//            clock.setTime(message['timeout']);
+//        }
+//        clock.start();
 	}
 	$.fx.off = true;  // disable ALL animations
  			
@@ -747,7 +747,7 @@ function handleExternalMove(message) {
 */
 function handleGameOver(message) {
     console.log('Game over.');
-    clock.stop();
+//    clock.stop();
 
     initCardsData();  // updates the score in both multiplayer and solo games
     // disable the chance to move any card
