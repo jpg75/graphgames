@@ -16,11 +16,11 @@ _SHOE_FILE_ORDER = ['NK', 'N', 'U', 'C', 'CK', 'T', 'GC', 'PL']
 
 
 class pyNemik(object):
-    def __init__(self, moves_file=None, ck_rules=None, nk_rules=None, iterations=10, gui=False,
+    def __init__(self, moves_file='', ck_rules=None, nk_rules=None, iterations=10, gui=False,
                  verbose=False):
         self.ordered_hands = []  # list of hands in order (as they appear in the file
         # dictionary of lists: hand -> [mv1, mv2,..]
-        self.moves = self.load_moves(moves_file) if moves_file is not None else self.moves = dict()
+        self.moves = self.load_moves(moves_file) if moves_file != '' else dict()
         self.ck_rules = self.load_rules(ck_rules) if ck_rules is None else None
         self.nk_rules = self.load_rules(nk_rules) if nk_rules is None else None
         self.iterations = iterations
@@ -89,34 +89,8 @@ class pyNemik(object):
             # classify this hand for every player:
 
             for mseq in self.moves[hand]:
-                if self.verbose: print "sequence: %s" % mseq
-                self.init_deck(hand, turn=hand_turn)
-                tcardseq = self.board['T']
-                s_detected = None
-                sx_dx_detect = None  # generic categorization
-
-                for c in mseq:
-                    if not s_detected:
-                        s_detected = self.detect_strategy(tcardseq)
-
-                    if self.verbose:
-                        print "playing %s" % c
-                        print "deck before: %s" % self.board
-
-                    if sx_dx_detect is None and c == 'T':
-                        sx_dx_detect = self.detect_sxdx_strategy()
-
-                    self.play_move(c)
-                    if self.verbose:
-                        print "deck after: %s" % self.board
-
-                    if c == 'T':
-                        tcardseq += ' ' + self.board['T']
-
-                    if not s_detected:
-                        s_detected = self.detect_strategy(tcardseq)
-
-                data[hand].append((tcardseq, s_detected, sx_dx_detect))
+                tseq, s, sxdx = self.classify_hand(hand, mseq, hand_turn)
+                data[hand].append((tseq, s, sxdx))
 
             data[hand] = [[x[0] for x in data[hand]], [x[1] if x[1] is not None else 'NA' for x in
                                                        data[hand]], [x[2] if x[2] is not None
@@ -124,6 +98,45 @@ class pyNemik(object):
                                                                      ]]
 
             self.classification = data
+
+    def classify_hand(self, hand, mseq, hand_turn='CK'):
+        """
+        Classify a single sequence of an hand. This method is suggested when feeding the class
+        with external data.
+
+        :param hand: a string sequence of a hand
+        :param mseq: a string sequence of moves
+        :param hand_turn: turn of the hand, default 'CK'
+        :return: a triplet: (t card sequence, detected strategy, sxdx strategy)
+        """
+        if self.verbose: print "sequence: %s" % mseq
+        self.init_deck(hand, turn=hand_turn)
+        tcardseq = self.board['T']
+        s_detected = None
+        sx_dx_detect = None  # generic categorization
+
+        for c in mseq:
+            if not s_detected:
+                s_detected = self.detect_strategy(tcardseq)
+
+            if self.verbose:
+                print "playing %s" % c
+                print "deck before: %s" % self.board
+
+            if sx_dx_detect is None and c == 'T':
+                sx_dx_detect = self.detect_sxdx_strategy()
+
+            self.play_move(c)
+            if self.verbose:
+                print "deck after: %s" % self.board
+
+            if c == 'T':
+                tcardseq += ' ' + self.board['T']
+
+            if not s_detected:
+                s_detected = self.detect_strategy(tcardseq)
+
+        return tcardseq, s_detected, sx_dx_detect
 
     def detect_sxdx_strategy(self):
         """
